@@ -19,7 +19,18 @@ const PENDLE_CONFIG = {
  * @returns {string} Amount in wei
  */
 function toWei(amount) {
-    return (parseFloat(amount) * Math.pow(10, 18)).toString();
+    // Use string manipulation for precise large number conversion
+    const amountStr = amount.toString();
+    const [integerPart, decimalPart = ''] = amountStr.split('.');
+    
+    // Pad decimal part to 18 places or truncate if longer
+    const paddedDecimal = decimalPart.padEnd(18, '0').substring(0, 18);
+    
+    // Combine integer and decimal parts
+    const weiString = integerPart + paddedDecimal;
+    
+    // Remove leading zeros but keep at least one digit
+    return weiString.replace(/^0+/, '') || '0';
 }
 
 /**
@@ -44,9 +55,24 @@ async function calculateMoonshot(amount) {
         if (!amount || amount <= 0) {
             throw new Error('Please enter a valid amount');
         }
+        
+        // Check for reasonable amount limits (prevent extremely large numbers)
+        const numAmount = parseFloat(amount);
+        if (numAmount > 10000000) { // 10M alUSD limit
+            throw new Error('Amount too large. Please enter a reasonable amount (max 10,000,000 alUSD).');
+        }
 
         // Convert amount to wei
         const netFromTakerWei = toWei(amount);
+        
+        // Debug logging for large amounts
+        if (numAmount >= 1000) {
+            console.log('Large amount conversion:', {
+                input: amount,
+                wei: netFromTakerWei,
+                weiLength: netFromTakerWei.length
+            });
+        }
         
         // Prepare API request payload
         const payload = {

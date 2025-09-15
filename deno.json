@@ -4,5 +4,8 @@
   "description": "A calculator for Pendle yield token moonshot scenarios with Almanak points integration",
   "keywords": ["pendle", "defi", "calculator", "yield-trading"],
   "author": "Magicianhax",
-  "license": "ISC"
+  "license": "ISC",
+  "tasks": {
+    "start": "deno run --allow-net --allow-read https://deno.land/std@0.208.0/http/file_server.ts"
+  }
 }

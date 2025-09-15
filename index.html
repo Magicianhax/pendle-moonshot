@@ -11,137 +11,253 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary-black: #000000;
+            --primary-white: #ffffff;
+            --accent-gray: #f8f9fa;
+            --border-gray: #e9ecef;
+            --text-gray: #6c757d;
+            --success-green: #28a745;
+            --warning-orange: #fd7e14;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #ffffff;
-            color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: var(--primary-black);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
+            line-height: 1.6;
         }
 
         .container {
-            max-width: 600px;
+            max-width: 700px;
             width: 100%;
-            border: 3px solid #000000;
-            padding: 30px;
-            background-color: #ffffff;
-            margin-top: 50px;
+            background-color: var(--primary-white);
+            margin-top: 40px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .container:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-black) 0%, #333333 100%);
+            color: var(--primary-white);
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            transform: translateX(-100%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .content {
+            padding: 40px 30px;
         }
 
         h1 {
-            text-align: center;
-            font-size: 2.5rem;
+            font-size: 2.75rem;
             font-weight: bold;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #000000;
-            padding-bottom: 15px;
+            margin: 0;
+            letter-spacing: -0.025em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 8px;
+            font-weight: 400;
         }
 
         .input-section {
-            margin-bottom: 30px;
+            margin-bottom: 32px;
         }
 
         label {
             display: block;
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--primary-black);
         }
 
         input[type="number"] {
             width: 100%;
-            padding: 15px;
-            font-size: 1.1rem;
-            border: 2px solid #000000;
-            background-color: #ffffff;
-            color: #000000;
+            padding: 16px 20px;
+            font-size: 1.125rem;
+            border: 2px solid var(--border-gray);
+            background-color: var(--primary-white);
+            color: var(--primary-black);
             outline: none;
+            border-radius: 12px;
+            transition: var(--transition);
+            font-family: inherit;
         }
 
         input[type="number"]:focus {
-            border: 3px solid #000000;
+            border-color: var(--primary-black);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        input[type="number"]:hover {
+            border-color: #666666;
         }
 
         .calculate-btn {
             width: 100%;
-            padding: 15px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            background-color: #000000;
-            color: #ffffff;
+            padding: 18px 24px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary-black) 0%, #333333 100%);
+            color: var(--primary-white);
             border: none;
+            border-radius: 12px;
             cursor: pointer;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+        }
+
+        .calculate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: var(--transition);
+        }
+
+        .calculate-btn:hover::before {
+            left: 100%;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
         }
 
         .calculate-btn:active {
-            background-color: #333333;
+            transform: translateY(0);
         }
 
         .calculate-btn:disabled {
-            background-color: #666666;
+            background: #6c757d;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .results {
-            border: 2px solid #000000;
-            padding: 20px;
-            background-color: #ffffff;
+            border: 1px solid var(--border-gray);
+            padding: 24px;
+            background-color: var(--accent-gray);
             display: none;
+            border-radius: 12px;
+            transition: var(--transition);
         }
 
         .results.show {
             display: block;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .result-item {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #000000;
-            font-size: 1.1rem;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-gray);
+            font-size: 1rem;
         }
 
         .result-item:last-child {
             border-bottom: none;
-            font-weight: bold;
-            font-size: 1.2rem;
+            font-weight: 600;
+            font-size: 1.125rem;
         }
 
         .result-label {
-            font-weight: bold;
+            font-weight: 600;
+            color: var(--primary-black);
         }
 
         .result-value {
-            font-family: 'Courier New', monospace;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-weight: 500;
+            color: var(--primary-black);
         }
 
         .error {
-            background-color: #ffffff;
-            border: 3px solid #000000;
-            color: #000000;
-            padding: 15px;
-            margin-top: 20px;
-            font-weight: bold;
+            background-color: #fff5f5;
+            border: 1px solid #fed7d7;
+            color: #c53030;
+            padding: 16px 20px;
+            margin-top: 24px;
+            font-weight: 500;
+            border-radius: 12px;
+            border-left: 4px solid #e53e3e;
         }
 
         .loading {
             text-align: center;
-            font-weight: bold;
-            font-size: 1.1rem;
-            padding: 20px;
+            font-weight: 600;
+            font-size: 1.125rem;
+            padding: 24px;
+            color: var(--text-gray);
         }
 
         .market-info {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
-            padding: 20px;
-            border: 2px solid #000000;
-            background-color: #ffffff;
+            margin-bottom: 32px;
+            padding: 24px;
+            background: linear-gradient(135deg, var(--accent-gray) 0%, #ffffff 100%);
+            border-radius: 12px;
+            border: 1px solid var(--border-gray);
+            box-shadow: var(--shadow);
         }
 
         .info-item {
@@ -149,112 +265,149 @@
             flex-direction: column;
             align-items: center;
             flex: 1;
+            transition: var(--transition);
+        }
+
+        .info-item:hover {
+            transform: translateY(-2px);
         }
 
         .info-label {
-            font-weight: bold;
+            font-weight: 600;
             font-size: 1rem;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.875rem;
         }
 
         .info-value {
-            font-size: 1.2rem;
-            font-family: 'Courier New', monospace;
+            font-size: 1.5rem;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-weight: 700;
         }
 
         .countdown {
-            color: #000000;
-            font-weight: bold;
+            color: var(--warning-orange);
         }
 
         .apy {
-            color: #000000;
-            font-weight: bold;
+            color: var(--success-green);
         }
 
         .result-section {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .result-section h3 {
-            font-size: 1.3rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #000000;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--primary-black);
+            color: var(--primary-black);
         }
 
         .maturity-section {
-            border-top: 3px solid #000000;
-            padding-top: 20px;
+            border-top: 2px solid var(--border-gray);
+            padding-top: 24px;
         }
 
         .total-value {
-            border-top: 2px solid #000000;
-            padding-top: 10px;
-            margin-top: 10px;
-            font-size: 1.1rem;
+            border-top: 1px solid var(--border-gray);
+            padding-top: 12px;
+            margin-top: 12px;
+            font-size: 1.125rem;
         }
 
         .almanak-section {
-            border-top: 3px solid #000000;
-            padding-top: 20px;
+            border-top: 2px solid var(--border-gray);
+            padding-top: 24px;
         }
 
         .table-container {
             overflow-x: auto;
-            margin-top: 15px;
+            margin-top: 16px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
         }
 
         .almanak-table {
             width: 100%;
             border-collapse: collapse;
-            border: 2px solid #000000;
-            background-color: #ffffff;
+            background-color: var(--primary-white);
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .almanak-table th {
-            background-color: #000000;
-            color: #ffffff;
-            padding: 12px 15px;
+            background: linear-gradient(135deg, var(--primary-black) 0%, #333333 100%);
+            color: var(--primary-white);
+            padding: 16px 20px;
             text-align: center;
-            font-weight: bold;
-            border: 1px solid #000000;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .almanak-table td {
-            padding: 10px 15px;
+            padding: 14px 20px;
             text-align: center;
-            border: 1px solid #000000;
-            font-family: 'Courier New', monospace;
+            border-bottom: 1px solid var(--border-gray);
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            transition: var(--transition);
         }
 
         .almanak-table tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: var(--accent-gray);
         }
 
         .almanak-table tbody tr:hover {
-            background-color: #f0f0f0;
+            background-color: #e3f2fd;
+            transform: scale(1.01);
         }
 
         .fdv-cell {
-            font-weight: bold;
-            font-size: 1.1rem;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--primary-black);
         }
 
         .apy-cell {
             font-size: 1rem;
+            color: var(--success-green);
+            font-weight: 600;
         }
 
         .usd-cell {
-            font-weight: bold;
-            color: #000000;
+            font-weight: 700;
+            color: var(--primary-black);
+            font-size: 1rem;
         }
 
         @media (max-width: 600px) {
+            .container {
+                margin-top: 20px;
+                border-radius: 12px;
+            }
+            
+            .header {
+                padding: 32px 24px;
+            }
+            
+            .content {
+                padding: 32px 24px;
+            }
+            
+            h1 {
+                font-size: 2.25rem;
+            }
+            
             .market-info {
                 flex-direction: column;
-                gap: 15px;
+                gap: 20px;
             }
             
             .info-item {
@@ -266,100 +419,109 @@
                 padding: 8px 10px;
                 font-size: 0.9rem;
             }
+            
+            .info-value {
+                font-size: 1.25rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Pendle Moonshot Calculator</h1>
-        
-        <!-- Market Info Section -->
-        <div class="market-info">
-            <div class="info-item">
-                <span class="info-label">Pool Matures In:</span>
-                <span class="info-value countdown" id="countdown">Loading...</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Live Underlying APY:</span>
-                <span class="info-value apy" id="underlyingApy">Loading...</span>
-            </div>
+        <div class="header">
+            <h1>Pendle Moonshot Calculator</h1>
+            <p class="subtitle">Calculate potential returns with Pendle Finance yield tokens</p>
         </div>
         
-        <div class="input-section">
-            <label for="amount">Enter Amount (alUSD):</label>
-            <input type="number" id="amount" placeholder="20" step="0.01" min="0">
-        </div>
-        
-        <button class="calculate-btn">Calculate Moonshot</button>
-        
-        <div id="loading" class="loading" style="display: none;">
-            Calculating...
-        </div>
-        
-        <div id="results" class="results">
-            <div class="result-section">
-                <h3>Trade Information</h3>
-                <div class="result-item">
-                    <span class="result-label">Input Amount:</span>
-                    <span class="result-value" id="inputAmount">-</span>
+        <div class="content">
+            <!-- Market Info Section -->
+            <div class="market-info">
+                <div class="info-item">
+                    <span class="info-label">Pool Matures In</span>
+                    <span class="info-value countdown" id="countdown">Loading...</span>
                 </div>
-                <div class="result-item">
-                    <span class="result-label">Net From Taker:</span>
-                    <span class="result-value" id="netFromTaker">-</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">Net To Taker:</span>
-                    <span class="result-value" id="netToTaker">-</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">Fee:</span>
-                    <span class="result-value" id="fee">-</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">Potential Return:</span>
-                    <span class="result-value" id="potentialReturn">-</span>
+                <div class="info-item">
+                    <span class="info-label">Live Underlying APY</span>
+                    <span class="info-value apy" id="underlyingApy">Loading...</span>
                 </div>
             </div>
             
-            <div class="result-section maturity-section">
-                <h3>Earnings at Maturity</h3>
-                <div class="result-item">
-                    <span class="result-label">Projected APY at Maturity:</span>
-                    <span class="result-value" id="maturityApy">-</span>
+            <div class="input-section">
+                <label for="amount">Enter Amount (alUSD)</label>
+                <input type="number" id="amount" placeholder="20" step="0.01" min="0">
+            </div>
+            
+            <button class="calculate-btn">Calculate Moonshot</button>
+            
+            <div id="loading" class="loading" style="display: none;">
+                Calculating...
+            </div>
+            
+            <div id="results" class="results">
+                <div class="result-section">
+                    <h3>Trade Information</h3>
+                    <div class="result-item">
+                        <span class="result-label">Input Amount:</span>
+                        <span class="result-value" id="inputAmount">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Net From Taker:</span>
+                        <span class="result-value" id="netFromTaker">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Net To Taker:</span>
+                        <span class="result-value" id="netToTaker">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Fee:</span>
+                        <span class="result-value" id="fee">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Potential Return:</span>
+                        <span class="result-value" id="potentialReturn">-</span>
+                    </div>
                 </div>
-                <div class="result-item">
-                    <span class="result-label">Expected Earnings (USDC):</span>
-                    <span class="result-value" id="expectedEarnings">-</span>
+                
+                <div class="result-section maturity-section">
+                    <h3>Earnings at Maturity</h3>
+                    <div class="result-item">
+                        <span class="result-label">Projected APY at Maturity:</span>
+                        <span class="result-value" id="maturityApy">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Expected Earnings (USDC):</span>
+                        <span class="result-value" id="expectedEarnings">-</span>
+                    </div>
+                    <div class="result-item total-value">
+                        <span class="result-label">Total Yield at Maturity:</span>
+                        <span class="result-value" id="totalMaturityValue">-</span>
+                    </div>
                 </div>
-                <div class="result-item total-value">
-                    <span class="result-label">Total Yield at Maturity:</span>
-                    <span class="result-value" id="totalMaturityValue">-</span>
+                
+                <div class="result-section almanak-section">
+                    <h3>Almanak Points APY Scenarios</h3>
+                    <p style="font-size: 0.9rem; margin-bottom: 16px; color: var(--text-gray);">
+                        USD value of points earned based on YT amount (1 point = 1 Almanak token, 1B total supply)
+                    </p>
+                    <div class="table-container">
+                        <table class="almanak-table" id="almanakTable">
+                            <thead>
+                                <tr>
+                                    <th>FDV</th>
+                                    <th>APY</th>
+                                    <th>USD Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="almanakTableBody">
+                                <!-- Almanak points scenarios will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
             
-            <div class="result-section almanak-section">
-                <h3>Almanak Points APY Scenarios</h3>
-                <p style="font-size: 0.9rem; margin-bottom: 15px; color: #666;">
-                    USD value of points earned based on YT amount (1 point = 1 Almanak token, 1B total supply)
-                </p>
-                <div class="table-container">
-                    <table class="almanak-table" id="almanakTable">
-                        <thead>
-                            <tr>
-                                <th>FDV</th>
-                                <th>APY</th>
-                                <th>USD Value</th>
-                            </tr>
-                        </thead>
-                        <tbody id="almanakTableBody">
-                            <!-- Almanak points scenarios will be populated here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <div id="error" class="error" style="display: none;"></div>
         </div>
-        
-        <div id="error" class="error" style="display: none;"></div>
     </div>
 
     <!-- Load API module first -->

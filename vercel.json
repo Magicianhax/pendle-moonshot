@@ -6,12 +6,6 @@
       "use": "@vercel/static"
     }
   ],
-  "rewrites": [
-    {
-      "source": "/((?!.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json|md)).*)",
-      "destination": "/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*\\.js)",

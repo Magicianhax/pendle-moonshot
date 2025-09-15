@@ -1,0 +1,8 @@
+{
+  "name": "pendle-moonshot-calculator",
+  "version": "1.0.0",
+  "description": "A calculator for Pendle yield token moonshot scenarios with Almanak points integration",
+  "keywords": ["pendle", "defi", "calculator", "yield-trading"],
+  "author": "Magicianhax",
+  "license": "ISC"
+}

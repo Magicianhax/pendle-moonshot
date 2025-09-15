@@ -1,0 +1,19 @@
+{
+  "name": "pendle-moonshot-calculator",
+  "version": "1.0.0",
+  "main": "index.html",
+  "scripts": {
+    "start": "live-server --port=3000 --open=/index.html",
+    "dev": "live-server --port=3000 --open=/index.html --watch=*.html,*.js,*.css",
+    "build": "echo 'Static site - no build step required'",
+    "preview": "live-server --port=3000 --open=/index.html",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["pendle", "defi", "calculator", "yield-trading"],
+  "author": "",
+  "license": "ISC",
+  "description": "A calculator for Pendle yield token moonshot scenarios with Almanak points integration",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}

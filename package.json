@@ -1,0 +1,23 @@
+{
+  "name": "pendle-moonshot-calculator",
+  "version": "1.0.0",
+  "description": "A high-contrast calculator for evaluating potential returns using Pendle Finance's market-order API.",
+  "main": "index.html",
+  "scripts": {
+    "start": "live-server --port=3000 --open=/",
+    "dev": "live-server --port=3000 --open=/ --watch=.",
+    "build": "echo 'Static site - no build required'"
+  },
+  "keywords": [
+    "pendle",
+    "defi",
+    "calculator",
+    "yield-trading",
+    "moonshot"
+  ],
+  "author": "Magicianhax",
+  "license": "ISC",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}

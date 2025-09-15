@@ -22,7 +22,7 @@ This project is now ready for deployment to Deno Deploy. Follow these steps to d
 5. **Configure project**:
    - Repository: Select your repository
    - Production Branch: `main`
-   - Entry Point: `index.html`
+   - Entry Point: `main.ts`
    - Environment: Production
 
 6. **Click "Deploy"**
@@ -45,7 +45,7 @@ This project is now ready for deployment to Deno Deploy. Follow these steps to d
 
 3. **Deploy from your project directory**:
    ```bash
-   deno deploy --project=your-project-name index.html
+   deno deploy --project=your-project-name main.ts
    ```
 
 ## Configuration Files

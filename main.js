@@ -177,18 +177,19 @@ function displayResults(results) {
     elements.resultElements.fee.textContent = results.fee;
     elements.resultElements.potentialReturn.textContent = results.potentialReturn;
     
-    // Calculate and display maturity earnings
-    const inputAmount = parseFloat(elements.amountInput.value);
+    // Calculate and display maturity earnings based on YT amount received
+    const ytAmount = parseFloat(results.netToTaker.replace(/[^\d.-]/g, '')); // Extract YT amount from results
     console.log('Market data for maturity calculation:', {
-        inputAmount,
+        ytAmount,
+        inputAmount: parseFloat(elements.amountInput.value),
         underlyingApy: marketData.underlyingApy,
         daysToMaturity: marketData.daysToMaturity
     });
     
-    if (inputAmount > 0 && marketData.underlyingApy > 0 && marketData.daysToMaturity > 0) {
+    if (ytAmount > 0 && marketData.underlyingApy > 0 && marketData.daysToMaturity > 0) {
         try {
             const maturityApy = window.PendleAPI.calculateMaturityApy(marketData.underlyingApy, marketData.daysToMaturity);
-            const earnings = window.PendleAPI.calculateMaturityEarnings(inputAmount, maturityApy);
+            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityApy);
             
             elements.resultElements.maturityApy.textContent = `${earnings.apyPercentage}%`;
             elements.resultElements.expectedEarnings.textContent = `${earnings.earnings.toFixed(2)} USDC`;
@@ -205,8 +206,7 @@ function displayResults(results) {
         elements.resultElements.totalMaturityValue.textContent = 'N/A';
     }
     
-    // Display Almanak points scenarios based on YT amount
-    const ytAmount = parseFloat(results.netToTaker.replace(/[^\d.-]/g, '')); // Extract YT amount from results
+    // Display Almanak points scenarios based on YT amount (reuse ytAmount from above)
     displayAlmanakScenarios(ytAmount, marketData.daysToMaturity);
     
     // Show results

@@ -188,8 +188,8 @@ function displayResults(results) {
     
     if (ytAmount > 0 && marketData.underlyingApy > 0 && marketData.daysToMaturity > 0) {
         try {
-            const maturityApy = window.PendleAPI.calculateMaturityApy(marketData.underlyingApy, marketData.daysToMaturity);
-            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityApy);
+            const maturityReturn = window.PendleAPI.calculateMaturityApy(marketData.underlyingApy, marketData.daysToMaturity);
+            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityReturn, marketData.underlyingApy, marketData.daysToMaturity);
             
             elements.resultElements.maturityApy.textContent = `${earnings.apyPercentage}%`;
             elements.resultElements.expectedEarnings.textContent = `${earnings.earnings.toFixed(2)} USDC`;

@@ -244,21 +244,28 @@ function calculateMaturityApy(underlyingApy, daysToMaturity) {
 }
 
 /**
- * Calculate earnings at maturity for a given amount
- * @param {number} amount - Input amount in alUSD
- * @param {number} maturityApy - Projected APY at maturity (as decimal)
+ * Calculate earnings at maturity for a given YT amount
+ * @param {number} ytAmount - YT amount received from trade
+ * @param {number} maturityReturn - Projected return at maturity (as decimal)
+ * @param {number} underlyingApy - Annual underlying APY (as decimal)
+ * @param {number} daysToMaturity - Days remaining until maturity
  * @returns {Object} Earnings calculation
  */
-function calculateMaturityEarnings(amount, maturityApy) {
+function calculateMaturityEarnings(ytAmount, maturityReturn, underlyingApy, daysToMaturity) {
     // YT tokens turn to 0 at maturity, you only get the yield
-    const earnings = amount * maturityApy;
+    const earnings = ytAmount * maturityReturn;
     const totalValue = earnings; // Only the yield, not principal + yield
     
+    // Calculate the actual APY based on earnings vs YT amount
+    // APY = (earnings/ytAmount) * (365/daysToMaturity) * 100
+    const actualApy = daysToMaturity > 0 ? (maturityReturn * 365 / daysToMaturity) : 0;
+    
     return {
-        initialAmount: amount,
+        initialAmount: ytAmount,
         earnings: earnings,
         totalValue: totalValue, // This is just the yield amount
-        apyPercentage: (maturityApy * 100).toFixed(3)
+        apyPercentage: (actualApy * 100).toFixed(3),
+        maturityReturnPercentage: (maturityReturn * 100).toFixed(3)
     };
 }
 

@@ -11,11 +11,13 @@ const elements = {
     errorDiv: null,
     countdown: null,
     underlyingApy: null,
+    tvlTableBody: null,
     resultElements: {
         inputAmount: null,
         netFromTaker: null,
         netToTaker: null,
         fee: null,
+        estimatedPoints: null,
         potentialReturn: null,
         maturityApy: null,
         expectedEarnings: null,
@@ -30,7 +32,9 @@ const elements = {
 let marketData = {
     underlyingApy: 0,
     daysToMaturity: 0,
-    lastUpdated: null
+    lastUpdated: null,
+    tvlData: null,
+    weightedTvl: null
 };
 
 /**
@@ -45,17 +49,26 @@ function initializeApp() {
     elements.errorDiv = document.getElementById('error');
     elements.countdown = document.getElementById('countdown');
     elements.underlyingApy = document.getElementById('underlyingApy');
+    elements.tvlTableBody = document.getElementById('tvlTableBody');
     
     // Get result elements
     elements.resultElements.inputAmount = document.getElementById('inputAmount');
     elements.resultElements.netFromTaker = document.getElementById('netFromTaker');
     elements.resultElements.netToTaker = document.getElementById('netToTaker');
     elements.resultElements.fee = document.getElementById('fee');
+    elements.resultElements.estimatedPoints = document.getElementById('estimatedPoints');
     elements.resultElements.potentialReturn = document.getElementById('potentialReturn');
     elements.resultElements.maturityApy = document.getElementById('maturityApy');
     elements.resultElements.expectedEarnings = document.getElementById('expectedEarnings');
     elements.resultElements.totalMaturityValue = document.getElementById('totalMaturityValue');
     elements.almanakTableBody = document.getElementById('almanakTableBody');
+
+    // Verify all elements loaded
+    console.log('DOM elements loaded:', {
+        tvlTableBody: !!elements.tvlTableBody,
+        underlyingApy: !!elements.underlyingApy,
+        countdown: !!elements.countdown
+    });
 
     // Set up event listeners
     setupEventListeners();
@@ -63,7 +76,7 @@ function initializeApp() {
     // Initialize market data and countdown
     initializeMarketData();
     
-    console.log('Pendle Moonshot Calculator initialized');
+    console.log('✅ Pendle Moonshot Calculator initialized');
 }
 
 /**
@@ -175,13 +188,29 @@ function displayResults(results) {
     elements.resultElements.netFromTaker.textContent = results.netFromTaker;
     elements.resultElements.netToTaker.textContent = results.netToTaker;
     elements.resultElements.fee.textContent = results.fee;
+    
+    // Calculate and display estimated points
+    const ytAmount = parseFloat(results.netToTaker.replace(/[^\d.-]/g, ''));
+    if (ytAmount > 0 && marketData.weightedTvl && marketData.daysToMaturity > 0) {
+        try {
+            const dailyPoints = window.PendleAPI.calculateDailyPoints(ytAmount, marketData.weightedTvl, 'yt');
+            const totalPoints = dailyPoints * marketData.daysToMaturity;
+            elements.resultElements.estimatedPoints.innerHTML = `${formatNumber(totalPoints)} points<br><span style="font-size: 0.85em; color: #6c757d;">(${formatNumber(dailyPoints)} daily)</span>`;
+        } catch (error) {
+            console.error('Error calculating points:', error);
+            elements.resultElements.estimatedPoints.textContent = 'N/A';
+        }
+    } else {
+        elements.resultElements.estimatedPoints.textContent = 'N/A';
+    }
+    
     elements.resultElements.potentialReturn.textContent = results.potentialReturn;
     
-    // Calculate and display maturity earnings based on YT amount received
-    const ytAmount = parseFloat(results.netToTaker.replace(/[^\d.-]/g, '')); // Extract YT amount from results
+    // Calculate and display maturity earnings based on YT amount received (reuse ytAmount from above)
+    const initialInvestment = parseFloat(elements.amountInput.value); // Get initial investment
     console.log('Market data for maturity calculation:', {
-        ytAmount,
-        inputAmount: parseFloat(elements.amountInput.value),
+        ytAmount: ytAmount,
+        initialInvestment: initialInvestment,
         underlyingApy: marketData.underlyingApy,
         daysToMaturity: marketData.daysToMaturity
     });
@@ -189,10 +218,15 @@ function displayResults(results) {
     if (ytAmount > 0 && marketData.underlyingApy > 0 && marketData.daysToMaturity > 0) {
         try {
             const maturityReturn = window.PendleAPI.calculateMaturityApy(marketData.underlyingApy, marketData.daysToMaturity);
-            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityReturn, marketData.underlyingApy, marketData.daysToMaturity);
+            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityReturn, marketData.underlyingApy, marketData.daysToMaturity, initialInvestment);
             
-            elements.resultElements.maturityApy.textContent = `${earnings.apyPercentage}%`;
+            // Display ROI
+            elements.resultElements.maturityApy.textContent = `${earnings.roiPercentage}%`;
+            
+            // Display expected earnings
             elements.resultElements.expectedEarnings.textContent = `${earnings.earnings.toFixed(2)} USDC`;
+            
+            // Display total yield value
             elements.resultElements.totalMaturityValue.textContent = `${earnings.totalValue.toFixed(2)} USDC (YT → 0)`;
         } catch (error) {
             console.error('Error calculating maturity earnings:', error);
@@ -291,11 +325,17 @@ async function initializeMarketData() {
             console.error('Failed to load market data:', response.error);
         }
         
+        // Fetch TVL data for points calculation
+        await fetchAndUpdateTvlData();
+        
         // Set up countdown timer to update every minute
         setInterval(updateCountdown, 60000);
         
         // Set up market data refresh every 5 minutes
         setInterval(refreshMarketData, 300000);
+        
+        // Set up TVL data refresh every 10 minutes
+        setInterval(fetchAndUpdateTvlData, 600000);
         
     } catch (error) {
         console.error('Failed to initialize market data:', error);
@@ -340,32 +380,324 @@ async function refreshMarketData() {
 }
 
 /**
- * Display Almanak points APY scenarios
+ * Fetch and update TVL data for points calculation
+ */
+async function fetchAndUpdateTvlData() {
+    try {
+        console.log('🔄 Fetching TVL data...');
+        
+        if (!window.PendleAPI || !window.PendleAPI.fetchTvlData) {
+            console.error('❌ PendleAPI not loaded!');
+            return;
+        }
+        
+        const tvlResponse = await window.PendleAPI.fetchTvlData();
+        
+        console.log('📦 TVL Response:', tvlResponse);
+        
+        if (tvlResponse && tvlResponse.success && tvlResponse.data) {
+            marketData.tvlData = tvlResponse.data;
+            marketData.weightedTvl = window.PendleAPI.calculateWeightedTvl(tvlResponse.data);
+            
+            console.log('📊 TVL Data Details:');
+            console.log('  DeFiLlama:', formatCurrency(marketData.tvlData.defiLlamaTvl));
+            console.log('  USDC:', formatCurrency(marketData.tvlData.usdcBalance));
+            console.log('  USDT:', formatCurrency(marketData.tvlData.usdtBalance));
+            console.log('  Total TVL:', formatCurrency(marketData.tvlData.totalTvl));
+            console.log('  ✅ YT TVL:', formatCurrency(marketData.weightedTvl.ytTvl), '(5x boost) - from YT token contract');
+            console.log('  ✅ LP TVL:', formatCurrency(marketData.weightedTvl.lpTvl), '(1.25x boost)');
+            console.log('  ✅ Curve Pool TVL:', formatCurrency(marketData.weightedTvl.curveTvl), '(3x boost)');
+            console.log('  ✅ Other TVL:', formatCurrency(marketData.weightedTvl.otherTvl), '(1x boost)');
+            console.log('  ❌ PT TVL:', formatCurrency(marketData.tvlData.pendlePtTvl || 0), '(EXCLUDED - 0 points)');
+            console.log('  Total Weighted TVL:', formatCurrency(marketData.weightedTvl.totalWeightedTvl));
+            
+            // Update TVL breakdown table
+            displayTvlBreakdown();
+            console.log('✅ TVL table updated successfully');
+        } else {
+            console.error('❌ Failed to fetch TVL data:', tvlResponse ? tvlResponse.error : 'No response');
+            if (elements.tvlTableBody) {
+                elements.tvlTableBody.innerHTML = '<tr><td colspan="6" class="loading-text" style="color: #dc2626;">Error loading TVL data. Check console for details.</td></tr>';
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error fetching TVL data:', error);
+        console.error('Error stack:', error.stack);
+        if (elements.tvlTableBody) {
+            elements.tvlTableBody.innerHTML = '<tr><td colspan="6" class="loading-text" style="color: #dc2626;">Error: ' + error.message + '</td></tr>';
+        }
+    }
+}
+
+/**
+ * Display TVL breakdown table
+ */
+function displayTvlBreakdown() {
+    if (!marketData.weightedTvl || !marketData.tvlData) {
+        elements.tvlTableBody.innerHTML = '<tr><td colspan="6" class="loading-text">Loading TVL data...</td></tr>';
+        return;
+    }
+    
+    const weighted = marketData.weightedTvl;
+    const tvlData = marketData.tvlData;
+    const totalWeighted = weighted.totalWeightedTvl;
+    const DAILY_POINTS = 316666; // Daily points distributed (95% of 333,333, 5% for referrals)
+    
+    // Calculate points share percentages and daily points
+    const ytShare = (weighted.weightedYt / totalWeighted) * 100;
+    const lpShare = (weighted.weightedLp / totalWeighted) * 100;
+    const curveShare = (weighted.weightedCurve / totalWeighted) * 100;
+    const otherShare = (weighted.weightedOther / totalWeighted) * 100;
+    
+    const ytDailyPoints = (weighted.weightedYt / totalWeighted) * DAILY_POINTS;
+    const lpDailyPoints = (weighted.weightedLp / totalWeighted) * DAILY_POINTS;
+    const curveDailyPoints = (weighted.weightedCurve / totalWeighted) * DAILY_POINTS;
+    const otherDailyPoints = (weighted.weightedOther / totalWeighted) * DAILY_POINTS;
+    const referralDailyPoints = 16667; // 5% reserved for referral program
+    
+    const tableHTML = `
+        <!-- Overall TVL Sources Section -->
+        <tr style="background-color: #f0f9ff; border-bottom: 2px solid #0284c7;">
+            <td colspan="6" style="padding: 12px 16px;">
+                <strong style="font-size: 1.05rem;">📈 Overall TVL Sources</strong>
+            </td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+            <td colspan="2"><span class="tvl-type">alUSD Supply (${formatNumber(tvlData.alUsdSupply)} × $1.0243)</span></td>
+            <td colspan="4"><strong>${formatCurrency(tvlData.alUsdSupply * 1.0243)}</strong></td>
+        </tr>
+        <tr style="background-color: #ffffff;">
+            <td colspan="2"><span class="tvl-type">alpUSD Supply (${formatNumber(tvlData.alpUsdSupply)} × $1.01)</span></td>
+            <td colspan="4"><strong>${formatCurrency(tvlData.alpUsdSupply * 1.01)}</strong></td>
+        </tr>
+        <tr style="background-color: #e0f2fe; font-weight: 600;">
+            <td colspan="2"><strong>GROSS TVL</strong></td>
+            <td colspan="4"><strong>${formatCurrency(tvlData.grossTvl || tvlData.defiLlamaTvl)}</strong></td>
+        </tr>
+        <tr style="background-color: #fee2e2;">
+            <td colspan="2"><span class="tvl-type" style="color: #991b1b;">Minus: SY alUSD (${formatNumber(tvlData.syAlUsdBalance)} × $1.0243)</span></td>
+            <td colspan="4"><strong style="color: #991b1b;">-${formatCurrency(tvlData.syAlUsdBalance * 1.0243)}</strong></td>
+        </tr>
+        <tr style="background-color: #dbeafe; font-weight: 600; border-bottom: 3px solid #0284c7;">
+            <td colspan="2"><strong>NET TVL (for points)</strong></td>
+            <td colspan="4"><strong style="font-size: 1.1rem;">${formatCurrency(tvlData.totalTvl)}</strong></td>
+        </tr>
+        
+        <!-- Points Distribution Section -->
+        <tr style="background-color: #f0f9ff; border-bottom: 2px solid #0284c7;">
+            <td colspan="6" style="padding: 12px 16px; padding-top: 20px;">
+                <strong style="font-size: 1.05rem;">🎯 Points Distribution Breakdown</strong>
+            </td>
+        </tr>
+        <tr>
+            <td><span class="tvl-type">YT (Yield Tokens)</span><span class="tvl-boost boost-5x">5x Boost</span></td>
+            <td>${formatCurrency(weighted.ytTvl)}</td>
+            <td>5x</td>
+            <td>${formatCurrency(weighted.weightedYt)}</td>
+            <td><strong>${formatNumber(ytDailyPoints)}</strong></td>
+            <td>${ytShare.toFixed(2)}%</td>
+        </tr>
+        <tr>
+            <td><span class="tvl-type">LP (Liquidity)</span><span class="tvl-boost boost-1-25x">1.25x Boost</span></td>
+            <td>${formatCurrency(weighted.lpTvl)}</td>
+            <td>1.25x</td>
+            <td>${formatCurrency(weighted.weightedLp)}</td>
+            <td><strong>${formatNumber(lpDailyPoints)}</strong></td>
+            <td>${lpShare.toFixed(2)}%</td>
+        </tr>
+        <tr>
+            <td><span class="tvl-type">Curve Pool</span><span class="tvl-boost" style="background-color: #fef3c7; color: #92400e;">3x Boost</span></td>
+            <td>${formatCurrency(weighted.curveTvl)}</td>
+            <td>3x</td>
+            <td>${formatCurrency(weighted.weightedCurve)}</td>
+            <td><strong>${formatNumber(curveDailyPoints)}</strong></td>
+            <td>${curveShare.toFixed(2)}%</td>
+        </tr>
+        <tr>
+            <td><span class="tvl-type">Other TVL</span><span class="tvl-boost boost-1x">1x Boost</span></td>
+            <td>${formatCurrency(weighted.otherTvl)}</td>
+            <td>1x</td>
+            <td>${formatCurrency(weighted.weightedOther)}</td>
+            <td><strong>${formatNumber(otherDailyPoints)}</strong></td>
+            <td>${otherShare.toFixed(2)}%</td>
+        </tr>
+        <tr style="opacity: 0.7; background-color: #fee2e2;">
+            <td><span class="tvl-type">PT (Principal)</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
+            <td><strong>${formatCurrency(tvlData.pendlePtTvl || 0)}</strong></td>
+            <td style="color: #991b1b;"><strong>0x</strong></td>
+            <td style="color: #991b1b;"><strong>${formatCurrency(0)}</strong></td>
+            <td style="color: #991b1b;"><strong>0</strong></td>
+            <td style="color: #991b1b;"><strong>0%</strong></td>
+        </tr>
+        <tr style="background-color: #fef3c7;">
+            <td><span class="tvl-type">Referral Program</span><span class="tvl-boost" style="background-color: #fef3c7; color: #92400e;">5% Reserve</span></td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td><strong>${formatNumber(referralDailyPoints)}</strong></td>
+            <td>5%</td>
+        </tr>
+        <tr class="tvl-total-row">
+            <td><strong>TOTAL (including referrals)</strong></td>
+            <td><strong>${formatCurrency(weighted.totalTvl)}</strong></td>
+            <td>-</td>
+            <td><strong>${formatCurrency(totalWeighted)}</strong></td>
+            <td><strong>${formatNumber(DAILY_POINTS + referralDailyPoints)}</strong></td>
+            <td><strong>100%</strong></td>
+        </tr>
+    `;
+    
+    elements.tvlTableBody.innerHTML = tableHTML;
+}
+
+/**
+ * Format currency
+ */
+function formatCurrency(value) {
+    return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(value);
+}
+
+/**
+ * Format number with commas
+ */
+function formatNumber(value) {
+    return new Intl.NumberFormat('en-US', { 
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(value);
+}
+
+/**
+ * Display Almanak points ROI scenarios with breakeven
  * @param {number} ytAmount - YT amount received (not input amount)
  * @param {number} daysToMaturity - Days remaining until maturity
  */
 function displayAlmanakScenarios(ytAmount, daysToMaturity) {
     if (ytAmount <= 0 || daysToMaturity <= 0) {
-        elements.almanakTableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px;">Calculate trade to see Almanak points scenarios</td></tr>';
+        elements.almanakTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Calculate trade to see Almanak points scenarios</td></tr>';
         return;
     }
     
+    // Check if we have weighted TVL data
+    if (!marketData.weightedTvl) {
+        elements.almanakTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Loading TVL data...</td></tr>';
+        return;
+    }
+    
+    // Get initial investment
+    const initialInvestment = parseFloat(elements.amountInput.value);
+    
     try {
-        const scenarios = window.PendleAPI.calculateAlmanakPointsEarnings(ytAmount, daysToMaturity);
+        const scenarios = window.PendleAPI.calculateAlmanakPointsEarnings(
+            ytAmount, 
+            daysToMaturity, 
+            marketData.weightedTvl,
+            marketData.underlyingApy,
+            initialInvestment
+        );
         
-        const tableRowsHTML = scenarios.map(scenario => `
-            <tr>
-                <td class="fdv-cell">${scenario.fdv}M</td>
-                <td class="apy-cell">${scenario.apyPercentage}%</td>
-                <td class="usd-cell">${scenario.earningsFormatted}</td>
-            </tr>
-        `).join('');
+        // Calculate breakeven FDV
+        const dailyPoints = window.PendleAPI.calculateDailyPoints(ytAmount, marketData.weightedTvl, 'yt');
+        const totalPoints = dailyPoints * daysToMaturity;
+        const dailyUnderlyingYield = ytAmount * (marketData.underlyingApy / 365);
+        const totalUnderlyingYield = dailyUnderlyingYield * daysToMaturity;
         
-        elements.almanakTableBody.innerHTML = tableRowsHTML;
+        // FDV where Total Earnings = Initial Investment
+        // (Points × Token Price) + Underlying Yield = Initial Investment
+        // Token Price = (Initial Investment - Underlying Yield) / Total Points
+        const neededPointsValue = initialInvestment - totalUnderlyingYield;
+        let breakevenFdv = null;
+        let breakevenTokenPrice = null;
+        
+        if (neededPointsValue > 0 && totalPoints > 0) {
+            breakevenTokenPrice = neededPointsValue / totalPoints;
+            breakevenFdv = (breakevenTokenPrice * 1000000000) / 1000000; // Convert to millions
+        }
+        
+        const tableRowsHTML = scenarios.map(scenario => {
+            // Color code ROI (green if profit, red if loss)
+            const roiColor = scenario.isProfit ? '#10b981' : '#dc2626';
+            
+            // Color code breakeven status
+            let breakevenColor = '#6c757d'; // default gray
+            if (scenario.breakevenStatus === 'No breakeven') {
+                breakevenColor = '#dc2626'; // red
+            } else if (scenario.breakevenDays <= daysToMaturity) {
+                // Breakeven within maturity period
+                breakevenColor = '#10b981'; // green
+            } else {
+                // Breakeven exceeds maturity period
+                breakevenColor = '#f59e0b'; // orange
+            }
+            
+            // Format underlying yield portion
+            const yieldFormatted = `$${scenario.underlyingYieldValue.toFixed(2)}`;
+            
+            return `
+                <tr>
+                    <td class="fdv-cell">${scenario.fdv}M</td>
+                    <td class="apy-cell" style="color: ${roiColor};">${scenario.roiPercentage}%</td>
+                    <td class="usd-cell">
+                        ${scenario.earningsFormatted}
+                        <div style="font-size: 0.75em; color: #6c757d; font-weight: normal;">(${yieldFormatted} yield)</div>
+                    </td>
+                    <td style="font-weight: 600;">${daysToMaturity} days</td>
+                    <td class="breakeven-cell" style="color: ${breakevenColor}; font-weight: 600;">${scenario.breakevenStatus}</td>
+                </tr>
+            `;
+        }).join('');
+        
+        // Insert breakeven FDV row if applicable
+        let finalHTML = tableRowsHTML;
+        if (breakevenFdv && breakevenFdv > 0) {
+            // Find where to insert the breakeven row
+            const rows = tableRowsHTML.split('</tr>');
+            let insertIndex = -1;
+            
+            for (let i = 0; i < scenarios.length; i++) {
+                if (scenarios[i].fdv >= breakevenFdv) {
+                    insertIndex = i;
+                    break;
+                }
+            }
+            
+            // Create breakeven row
+            const breakevenRow = `
+                <tr style="background-color: #dbeafe; border: 2px solid #3b82f6;">
+                    <td class="fdv-cell" style="color: #1e40af; font-weight: 700;">${breakevenFdv.toFixed(0)}M</td>
+                    <td class="apy-cell" style="color: #1e40af; font-weight: 700;">~0.00%</td>
+                    <td class="usd-cell" style="color: #1e40af;">
+                        $${initialInvestment.toFixed(2)}
+                        <div style="font-size: 0.75em; color: #6c757d; font-weight: normal;">($${totalUnderlyingYield.toFixed(2)} yield)</div>
+                    </td>
+                    <td style="font-weight: 600; color: #1e40af;">${daysToMaturity} days</td>
+                    <td class="breakeven-cell" style="color: #3b82f6; font-weight: 700;">
+                        ✓ Breakeven FDV
+                    </td>
+                </tr>
+            `;
+            
+            if (insertIndex >= 0) {
+                // Insert before the found index
+                const rowsArray = rows.slice(0, -1); // Remove last empty element
+                rowsArray.splice(insertIndex, 0, breakevenRow.trim());
+                finalHTML = rowsArray.join('</tr>') + '</tr>';
+            } else {
+                // Append at the end
+                finalHTML = tableRowsHTML + breakevenRow;
+            }
+        }
+        
+        elements.almanakTableBody.innerHTML = finalHTML;
         
     } catch (error) {
         console.error('Error displaying Almanak scenarios:', error);
-        elements.almanakTableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px;">Error loading scenarios</td></tr>';
+        elements.almanakTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Error loading scenarios</td></tr>';
     }
 }
 
@@ -375,5 +707,6 @@ window.MoonshotCalculator = {
     resetForm,
     validateAmount,
     refreshMarketData,
-    updateCountdown
+    updateCountdown,
+    displayTvlBreakdown
 };

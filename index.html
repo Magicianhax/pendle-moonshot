@@ -36,7 +36,7 @@
         }
 
         .container {
-            max-width: 700px;
+            max-width: 1000px;
             width: 100%;
             background-color: var(--primary-white);
             margin-top: 40px;
@@ -387,6 +387,118 @@
             font-size: 1rem;
         }
 
+        .tvl-breakdown {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid #bae6fd;
+            box-shadow: var(--shadow);
+        }
+
+        .tvl-breakdown h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--primary-black);
+        }
+
+        .tvl-breakdown p {
+            font-size: 0.9rem;
+            color: var(--text-gray);
+            margin-bottom: 16px;
+        }
+
+        .tvl-table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .tvl-table {
+            width: 100%;
+            min-width: 100%;
+            border-collapse: collapse;
+            background-color: var(--primary-white);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .tvl-table th {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: var(--primary-white);
+            padding: 14px 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        .tvl-table th:first-child {
+            text-align: left;
+        }
+
+        .tvl-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-gray);
+            font-size: 0.9rem;
+            text-align: center;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+        }
+
+        .tvl-table td:first-child {
+            text-align: left;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .tvl-table tbody tr:nth-child(even) {
+            background-color: var(--accent-gray);
+        }
+
+        .tvl-type {
+            font-weight: 600;
+            color: var(--primary-black);
+        }
+
+        .tvl-boost {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .boost-5x {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .boost-1-25x {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .boost-1x {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        .tvl-total-row {
+            font-weight: 700;
+            background-color: #dbeafe !important;
+            border-top: 2px solid #0284c7;
+        }
+
+        .loading-text {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-gray);
+            font-style: italic;
+        }
+
         @media (max-width: 600px) {
             .container {
                 margin-top: 20px;
@@ -420,6 +532,38 @@
                 font-size: 0.9rem;
             }
             
+            .tvl-table {
+                min-width: 100%;
+                font-size: 0.7rem;
+            }
+            
+            .tvl-table th,
+            .tvl-table td {
+                padding: 6px 4px;
+                font-size: 0.7rem;
+            }
+            
+            .tvl-boost {
+                display: block;
+                margin-left: 0;
+                margin-top: 4px;
+                font-size: 0.65rem;
+                padding: 2px 4px;
+            }
+            
+            .tvl-breakdown h3 {
+                font-size: 1rem;
+            }
+            
+            .tvl-breakdown p {
+                font-size: 0.75rem;
+            }
+            
+            .tvl-table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
             .info-value {
                 font-size: 1.25rem;
             }
@@ -443,6 +587,34 @@
                 <div class="info-item">
                     <span class="info-label">Live Underlying APY</span>
                     <span class="info-value apy" id="underlyingApy">Loading...</span>
+                </div>
+            </div>
+            
+            <!-- TVL Breakdown Section -->
+            <div class="tvl-breakdown">
+                <h3>📊 Points Distribution (333,333 total daily points)</h3>
+                <p>Pro-rata distribution based on weighted TVL. Higher boost = more points share. <strong>Note: PT holders get 0 points!</strong></p>
+                <p style="font-size: 0.85em; color: #f59e0b; margin-top: 8px; font-style: italic;">
+                    ⚠️ Rough estimate: 95% distributed to TVL positions, 5% reserved for referral program. Actual allocation may vary.
+                </p>
+                <div class="tvl-table-container">
+                    <table class="tvl-table">
+                        <thead>
+                            <tr>
+                                <th>TVL Type</th>
+                                <th>TVL Amount</th>
+                                <th>Boost</th>
+                                <th>Weighted TVL</th>
+                                <th>Daily Points</th>
+                                <th>Share %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tvlTableBody">
+                            <tr>
+                                <td colspan="6" class="loading-text">Loading TVL data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             
@@ -477,6 +649,10 @@
                         <span class="result-value" id="fee">-</span>
                     </div>
                     <div class="result-item">
+                        <span class="result-label">Estimated Points (at maturity):</span>
+                        <span class="result-value" id="estimatedPoints" style="color: #10b981;">-</span>
+                    </div>
+                    <div class="result-item">
                         <span class="result-label">Potential Return:</span>
                         <span class="result-value" id="potentialReturn">-</span>
                     </div>
@@ -485,7 +661,7 @@
                 <div class="result-section maturity-section">
                     <h3>Earnings at Maturity</h3>
                     <div class="result-item">
-                        <span class="result-label">Projected APY at Maturity:</span>
+                        <span class="result-label">ROI (Return on Investment):</span>
                         <span class="result-value" id="maturityApy">-</span>
                     </div>
                     <div class="result-item">
@@ -499,17 +675,22 @@
                 </div>
                 
                 <div class="result-section almanak-section">
-                    <h3>Almanak Points APY Scenarios</h3>
-                    <p style="font-size: 0.9rem; margin-bottom: 16px; color: var(--text-gray);">
-                        USD value of points earned based on YT amount (1 point = 1 Almanak token, 1B total supply)
+                    <h3>Almanak Points ROI Scenarios</h3>
+                    <p style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-gray);">
+                        316,666 daily points (95% of 333,333) distributed pro-rata with boosts: YT 5x, LP 1.25x, Other 1x. Earnings include underlying yield + points value. Breakeven shows when you recover your investment.
+                    </p>
+                    <p style="font-size: 0.85em; color: #f59e0b; margin-bottom: 16px; font-style: italic;">
+                        ⚠️ Rough estimate: 5% reserved for referrals. Actual points may vary based on final allocation.
                     </p>
                     <div class="table-container">
                         <table class="almanak-table" id="almanakTable">
                             <thead>
                                 <tr>
                                     <th>FDV</th>
-                                    <th>APY</th>
-                                    <th>USD Value</th>
+                                    <th>ROI</th>
+                                    <th>Total Earnings</th>
+                                    <th>Days to Maturity</th>
+                                    <th>Breakeven</th>
                                 </tr>
                             </thead>
                             <tbody id="almanakTableBody">
@@ -525,8 +706,8 @@
     </div>
 
     <!-- Load API module first -->
-    <script src="api.js?v=20250923"></script>
+    <script src="api.js?v=20251003-22"></script>
     <!-- Load main application logic -->
-    <script src="main.js?v=20250923"></script>
+    <script src="main.js?v=20251003-22"></script>
 </body>
 </html>

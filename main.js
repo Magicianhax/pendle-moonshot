@@ -619,7 +619,13 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity) {
             breakevenFdv = (breakevenTokenPrice * 1000000000) / 1000000; // Convert to millions
         }
         
-        const tableRowsHTML = scenarios.map(scenario => {
+        // Filter scenarios to show 90M FDV, breakeven FDV, and higher
+        const filteredScenarios = scenarios.filter(scenario => {
+            if (!breakevenFdv) return true; // Show all if no breakeven calculated
+            return scenario.fdv === 90 || scenario.fdv >= breakevenFdv; // Always keep 90M
+        });
+        
+        const tableRowsHTML = filteredScenarios.map(scenario => {
             // Color code ROI (green if profit, red if loss)
             const roiColor = scenario.isProfit ? '#10b981' : '#dc2626';
             
@@ -659,8 +665,8 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity) {
             const rows = tableRowsHTML.split('</tr>');
             let insertIndex = -1;
             
-            for (let i = 0; i < scenarios.length; i++) {
-                if (scenarios[i].fdv >= breakevenFdv) {
+            for (let i = 0; i < filteredScenarios.length; i++) {
+                if (filteredScenarios[i].fdv >= breakevenFdv) {
                     insertIndex = i;
                     break;
                 }

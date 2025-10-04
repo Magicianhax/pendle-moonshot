@@ -588,6 +588,17 @@
                     <span class="info-label">Live Underlying APY</span>
                     <span class="info-value apy" id="underlyingApy">Loading...</span>
                 </div>
+                <div class="info-item">
+                    <span class="info-label">Live Implied APY</span>
+                    <span class="info-value apy" id="impliedApy">Loading...</span>
+                </div>
+            </div>
+            
+            <!-- Pendle API Data Source Note -->
+            <div style="background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%); border: 1px solid #93c5fd; border-radius: 12px; padding: 16px 20px; margin-bottom: 32px; box-shadow: var(--shadow);">
+                <p style="font-size: 0.9rem; color: #1e40af; margin: 0; text-align: center;">
+                    <strong>📊 Real-Time Data:</strong> All APY rates and market information are sourced directly from the official Pendle Finance API, ensuring accurate and up-to-date calculations for your investment decisions.
+                </p>
             </div>
             
             <!-- TVL Breakdown Section -->
@@ -631,30 +642,26 @@
             
             <div id="results" class="results">
                 <div class="result-section">
-                    <h3>Trade Information</h3>
+                    <h3>Trade Execution</h3>
                     <div class="result-item">
                         <span class="result-label">Input Amount:</span>
                         <span class="result-value" id="inputAmount">-</span>
                     </div>
                     <div class="result-item">
-                        <span class="result-label">Net From Taker:</span>
+                        <span class="result-label">You Pay:</span>
                         <span class="result-value" id="netFromTaker">-</span>
                     </div>
                     <div class="result-item">
-                        <span class="result-label">Net To Taker:</span>
-                        <span class="result-value" id="netToTaker">-</span>
+                        <span class="result-label">You Receive (YT):</span>
+                        <span class="result-value" id="netToTaker" style="color: #10b981; font-weight: 700;">-</span>
                     </div>
                     <div class="result-item">
-                        <span class="result-label">Fee:</span>
+                        <span class="result-label">Trading Fee:</span>
                         <span class="result-value" id="fee">-</span>
                     </div>
                     <div class="result-item">
                         <span class="result-label">Estimated Points (at maturity):</span>
                         <span class="result-value" id="estimatedPoints" style="color: #10b981;">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">Potential Return:</span>
-                        <span class="result-value" id="potentialReturn">-</span>
                     </div>
                 </div>
                 

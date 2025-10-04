@@ -134,31 +134,25 @@ function formatApiResponse(apiResponse) {
     }
 
     const { data, inputAmount } = apiResponse;
-    const marketTrade = data.marketTrade || data.totalTrade;
+    // Use totalTrade (full order including limit orders + market), fallback to marketTrade if unavailable
+    const tradeData = data.totalTrade || data.marketTrade;
 
-    // Calculate return metrics
-    const netFromTaker = parseFloat(marketTrade.netFromTaker);
-    const netToTaker = parseFloat(marketTrade.netToTaker);
-    const fee = parseFloat(marketTrade.fee);
-    
-    // Calculate potential return percentage based on YT value vs input
-    // This should show the actual return from the trade, not the ratio
-    // For now, we'll show 0% as the trade is 1:1 alUSD to YT with fees
-    const returnPercentage = "0.00";
+    // Calculate return metrics from totalTrade
+    const netFromTaker = parseFloat(tradeData.netFromTaker);
+    const netToTaker = parseFloat(tradeData.netToTaker);
+    const fee = parseFloat(tradeData.fee);
 
     return {
         success: true,
         formatted: {
             inputAmount: `${inputAmount} alUSD`,
-            netFromTaker: `${formatFromWei(marketTrade.netFromTaker)} alUSD`,
-            netToTaker: `${formatFromWei(marketTrade.netToTaker, 6)} YT`,
-            fee: `${formatFromWei(marketTrade.fee)} alUSD`,
-            potentialReturn: `${returnPercentage}%`,
+            netFromTaker: `${formatFromWei(tradeData.netFromTaker)} alUSD`,
+            netToTaker: `${formatFromWei(tradeData.netToTaker, 6)} YT`,
+            fee: `${formatFromWei(tradeData.fee)} alUSD`,
             rawData: {
                 netFromTaker: netFromTaker,
                 netToTaker: netToTaker,
-                fee: fee,
-                returnPercentage: returnPercentage
+                fee: fee
             }
         }
     };

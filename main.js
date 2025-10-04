@@ -11,6 +11,7 @@ const elements = {
     errorDiv: null,
     countdown: null,
     underlyingApy: null,
+    impliedApy: null,
     tvlTableBody: null,
     resultElements: {
         inputAmount: null,
@@ -18,7 +19,6 @@ const elements = {
         netToTaker: null,
         fee: null,
         estimatedPoints: null,
-        potentialReturn: null,
         maturityApy: null,
         expectedEarnings: null,
         totalMaturityValue: null
@@ -31,6 +31,7 @@ const elements = {
  */
 let marketData = {
     underlyingApy: 0,
+    impliedApy: 0,
     daysToMaturity: 0,
     lastUpdated: null,
     tvlData: null,
@@ -49,6 +50,7 @@ function initializeApp() {
     elements.errorDiv = document.getElementById('error');
     elements.countdown = document.getElementById('countdown');
     elements.underlyingApy = document.getElementById('underlyingApy');
+    elements.impliedApy = document.getElementById('impliedApy');
     elements.tvlTableBody = document.getElementById('tvlTableBody');
     
     // Get result elements
@@ -57,7 +59,6 @@ function initializeApp() {
     elements.resultElements.netToTaker = document.getElementById('netToTaker');
     elements.resultElements.fee = document.getElementById('fee');
     elements.resultElements.estimatedPoints = document.getElementById('estimatedPoints');
-    elements.resultElements.potentialReturn = document.getElementById('potentialReturn');
     elements.resultElements.maturityApy = document.getElementById('maturityApy');
     elements.resultElements.expectedEarnings = document.getElementById('expectedEarnings');
     elements.resultElements.totalMaturityValue = document.getElementById('totalMaturityValue');
@@ -67,6 +68,7 @@ function initializeApp() {
     console.log('DOM elements loaded:', {
         tvlTableBody: !!elements.tvlTableBody,
         underlyingApy: !!elements.underlyingApy,
+        impliedApy: !!elements.impliedApy,
         countdown: !!elements.countdown
     });
 
@@ -183,13 +185,13 @@ async function performCalculation(amount) {
  * @param {Object} results - Formatted results
  */
 function displayResults(results) {
-    // Update trade result elements
+    // Update trade result elements (from totalTrade)
     elements.resultElements.inputAmount.textContent = results.inputAmount;
     elements.resultElements.netFromTaker.textContent = results.netFromTaker;
     elements.resultElements.netToTaker.textContent = results.netToTaker;
     elements.resultElements.fee.textContent = results.fee;
     
-    // Calculate and display estimated points
+    // Calculate and display estimated points based on YT received (netToTaker)
     const ytAmount = parseFloat(results.netToTaker.replace(/[^\d.-]/g, ''));
     if (ytAmount > 0 && marketData.weightedTvl && marketData.daysToMaturity > 0) {
         try {
@@ -203,8 +205,6 @@ function displayResults(results) {
     } else {
         elements.resultElements.estimatedPoints.textContent = 'N/A';
     }
-    
-    elements.resultElements.potentialReturn.textContent = results.potentialReturn;
     
     // Calculate and display maturity earnings based on YT amount received (reuse ytAmount from above)
     const initialInvestment = parseFloat(elements.amountInput.value); // Get initial investment
@@ -316,12 +316,15 @@ async function initializeMarketData() {
         const response = await window.PendleAPI.getMarketData();
         if (response.success) {
             marketData.underlyingApy = response.data.underlyingApy;
+            marketData.impliedApy = response.data.impliedApy;
             marketData.lastUpdated = new Date();
             
             // Update UI
             elements.underlyingApy.textContent = `${(response.data.underlyingApy * 100).toFixed(2)}%`;
+            elements.impliedApy.textContent = `${(response.data.impliedApy * 100).toFixed(2)}%`;
         } else {
             elements.underlyingApy.textContent = 'Error loading';
+            elements.impliedApy.textContent = 'Error loading';
             console.error('Failed to load market data:', response.error);
         }
         
@@ -367,10 +370,12 @@ async function refreshMarketData() {
         const response = await window.PendleAPI.getMarketData();
         if (response.success) {
             marketData.underlyingApy = response.data.underlyingApy;
+            marketData.impliedApy = response.data.impliedApy;
             marketData.lastUpdated = new Date();
             
             // Update UI
             elements.underlyingApy.textContent = `${(response.data.underlyingApy * 100).toFixed(2)}%`;
+            elements.impliedApy.textContent = `${(response.data.impliedApy * 100).toFixed(2)}%`;
             
             console.log('Market data refreshed:', response.data);
         }

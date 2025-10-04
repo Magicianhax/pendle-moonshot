@@ -291,7 +291,7 @@ function calculateMaturityEarnings(ytAmount, maturityReturn, underlyingApy, days
 const ALMANAK_POINTS_CONFIG = {
     dailyPoints: 316666, // Points distributed per day (333,333 - 5% for referrals)
     totalSupply: 1000000000, // 1B tokens
-    fdvScenarios: [90, 150, 200, 250, 300, 350, 400, 450, 500], // FDV scenarios in millions
+    fdvScenarios: [90, 200, 250, 300, 350, 400, 450, 500], // FDV scenarios in millions
     boosts: {
         other: 1,    // 1x points for other TVL
         yt: 5,       // 5x points for YT tokens
@@ -316,7 +316,7 @@ const ALMANAK_POINTS_CONFIG = {
 };
 
 /**
- * Fetch TVL data from various sources
+ * Fetch TVL data from backend API
  * @returns {Promise<Object>} TVL breakdown data
  */
 async function fetchTvlData() {
@@ -336,130 +336,45 @@ async function fetchTvlData() {
             totalTvl: 0
         };
         
-        // Fetch alUSD and alpUSD total supplies to calculate TVL
-        let alUsdSupply = 0;
-        let alpUsdSupply = 0;
+        // Fetch data from backend API
+        console.log('🚀 Fetching TVL data from backend API...');
+        const backendResponse = await fetch('/.netlify/functions/get-tvl-data');
+        const backendData = await backendResponse.json();
         
-        // Fetch alUSD total supply
-        try {
-            const alUsdSupplyUrl = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_POINTS_CONFIG.alUsdToken}&apikey=${ALMANAK_POINTS_CONFIG.etherscanApiKey}`;
-            const alUsdResponse = await fetch(alUsdSupplyUrl);
-            const alUsdData = await alUsdResponse.json();
-            if (alUsdData.status === "1" && alUsdData.result) {
-                // alUSD has 18 decimals
-                alUsdSupply = parseFloat(alUsdData.result) / 1e18;
-            }
-        } catch (error) {
-            console.error("alUSD Supply API Error:", error);
+        if (backendData.success && backendData.data) {
+            console.log('✅ Backend API response:', backendData.data);
+            
+            // Extract data from backend
+            const alUsdSupply = backendData.data.alUsdSupply || 0;
+            const alpUsdSupply = backendData.data.alpUsdSupply || 0;
+            const syAlUsdBalance = backendData.data.syAlUsdBalance || 0;
+            const ytTotalSupply = backendData.data.ytTotalSupply || 0;
+            
+            // Store supplies and SY balance
+            results.alUsdSupply = alUsdSupply;
+            results.alpUsdSupply = alpUsdSupply;
+            results.syAlUsdBalance = syAlUsdBalance;
+            
+            // Store Curve TVL from backend
+            results.curveTvl = backendData.data.curveTvl || 0;
+            console.log('✅ YT Supply from backend:', ytTotalSupply);
+        } else {
+            console.error('❌ Backend API returned error:', backendData.error);
+            throw new Error(backendData.error || 'Backend API failed');
         }
-        
-        // Fetch alpUSD total supply
-        try {
-            const alpUsdSupplyUrl = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_POINTS_CONFIG.alpUsdToken}&apikey=${ALMANAK_POINTS_CONFIG.etherscanApiKey}`;
-            const alpUsdResponse = await fetch(alpUsdSupplyUrl);
-            const alpUsdData = await alpUsdResponse.json();
-            if (alpUsdData.status === "1" && alpUsdData.result) {
-                // alpUSD has 18 decimals
-                alpUsdSupply = parseFloat(alpUsdData.result) / 1e18;
-            }
-        } catch (error) {
-            console.error("alpUSD Supply API Error:", error);
-        }
-        
-        // Fetch alUSD balance locked in SY contract (to subtract from TVL)
-        let syAlUsdBalance = 0;
-        try {
-            const syBalanceUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_POINTS_CONFIG.alUsdToken}&address=${ALMANAK_POINTS_CONFIG.syContractAddress}&tag=latest&apikey=${ALMANAK_POINTS_CONFIG.etherscanApiKey}`;
-            const syResponse = await fetch(syBalanceUrl);
-            const syData = await syResponse.json();
-            if (syData.status === "1" && syData.result) {
-                // alUSD has 18 decimals
-                syAlUsdBalance = parseFloat(syData.result) / 1e18;
-            }
-        } catch (error) {
-            console.error("SY alUSD Balance API Error:", error);
-        }
-        
-        // Store supplies and SY balance
-        results.alUsdSupply = alUsdSupply;
-        results.alpUsdSupply = alpUsdSupply;
-        results.syAlUsdBalance = syAlUsdBalance;
         
         // Calculate gross TVL from token supplies (before SY subtraction)
         // Formula: (alUSD supply × $1.0243) + (alpUSD supply × $1.01)
+        const alUsdSupply = results.alUsdSupply;
+        const alpUsdSupply = results.alpUsdSupply;
+        const syAlUsdBalance = results.syAlUsdBalance;
+        const ytTotalSupply = backendData.data.ytTotalSupply || 0;
+        
         results.defiLlamaTvl = (alUsdSupply * ALMANAK_POINTS_CONFIG.alUsdPrice) + 
                                (alpUsdSupply * ALMANAK_POINTS_CONFIG.alpUsdPrice);
         
         // Store gross TVL before SY subtraction
         results.grossTvl = results.defiLlamaTvl;
-        
-        // USDC and USDT balances excluded for now
-        // // Fetch USDC balance
-        // try {
-        //     const usdcUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_POINTS_CONFIG.usdcToken}&address=${ALMANAK_POINTS_CONFIG.usdcAddress}&tag=latest&apikey=${ALMANAK_POINTS_CONFIG.etherscanApiKey}`;
-        //     const usdcResponse = await fetch(usdcUrl);
-        //     const usdcData = await usdcResponse.json();
-        //     if (usdcData.status === "1" && usdcData.result) {
-        //         results.usdcBalance = parseFloat(usdcData.result) / 1e6;
-        //     }
-        // } catch (error) {
-        //     console.error("USDC Balance API Error:", error);
-        // }
-        
-        // // Fetch USDT balance
-        // try {
-        //     const usdtUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_POINTS_CONFIG.usdtToken}&address=${ALMANAK_POINTS_CONFIG.usdtAddress}&tag=latest&apikey=${ALMANAK_POINTS_CONFIG.etherscanApiKey}`;
-        //     const usdtResponse = await fetch(usdtUrl);
-        //     const usdtData = await usdtResponse.json();
-        //     if (usdtData.status === "1" && usdtData.result) {
-        //         results.usdtBalance = parseFloat(usdtData.result) / 1e6;
-        //     }
-        // } catch (error) {
-        //     console.error("USDT Balance API Error:", error);
-        // }
-        
-        // Fetch Curve pool TVL (USDC + alUSD balances)
-        try {
-            let curveUsdcBalance = 0;
-            let curveAlUsdBalance = 0;
-            
-            // Fetch USDC balance in Curve pool
-            const curveUsdcUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_POINTS_CONFIG.usdcToken}&address=${ALMANAK_POINTS_CONFIG.curvePoolAddress}&tag=latest&apikey=${ALMANAK_POINTS_CONFIG.etherscanApiKey}`;
-            const curveUsdcResponse = await fetch(curveUsdcUrl);
-            const curveUsdcData = await curveUsdcResponse.json();
-            if (curveUsdcData.status === "1" && curveUsdcData.result) {
-                curveUsdcBalance = parseFloat(curveUsdcData.result) / 1e6;
-            }
-            
-            // Fetch alUSD balance in Curve pool
-            const curveAlUsdUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_POINTS_CONFIG.alUsdToken}&address=${ALMANAK_POINTS_CONFIG.curvePoolAddress}&tag=latest&apikey=${ALMANAK_POINTS_CONFIG.etherscanApiKey}`;
-            const curveAlUsdResponse = await fetch(curveAlUsdUrl);
-            const curveAlUsdData = await curveAlUsdResponse.json();
-            if (curveAlUsdData.status === "1" && curveAlUsdData.result) {
-                // alUSD has 18 decimals
-                curveAlUsdBalance = parseFloat(curveAlUsdData.result) / 1e18;
-            }
-            
-            // Calculate Curve TVL: (USDC * $1) + (alUSD * $1.02)
-            results.curveTvl = (curveUsdcBalance * ALMANAK_POINTS_CONFIG.usdcPrice) + 
-                               (curveAlUsdBalance * ALMANAK_POINTS_CONFIG.alUsdPrice);
-        } catch (error) {
-            console.error("Curve Pool TVL API Error:", error);
-        }
-        
-        // Fetch YT total supply from Etherscan (actual YT token supply)
-        let ytTotalSupply = 0;
-        try {
-            const ytSupplyUrl = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_POINTS_CONFIG.ytToken}&apikey=${ALMANAK_POINTS_CONFIG.etherscanApiKey}`;
-            const ytResponse = await fetch(ytSupplyUrl);
-            const ytData = await ytResponse.json();
-            if (ytData.status === "1" && ytData.result) {
-                // YT token has 6 decimals (same as alUSD)
-                ytTotalSupply = parseFloat(ytData.result) / 1e6;
-            }
-        } catch (error) {
-            console.error("YT Supply API Error:", error);
-        }
         
         // Get Pendle market data for LP and PT TVL
         try {

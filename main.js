@@ -19,6 +19,7 @@ const elements = {
         netToTaker: null,
         fee: null,
         estimatedPoints: null,
+        maturityPoints: null,
         maturityApy: null,
         expectedEarnings: null,
         totalMaturityValue: null
@@ -80,6 +81,7 @@ function initializeApp() {
     elements.resultElements.netToTaker = document.getElementById('netToTaker');
     elements.resultElements.fee = document.getElementById('fee');
     elements.resultElements.estimatedPoints = document.getElementById('estimatedPoints');
+    elements.resultElements.maturityPoints = document.getElementById('maturityPoints');
     elements.resultElements.maturityApy = document.getElementById('maturityApy');
     elements.resultElements.expectedEarnings = document.getElementById('expectedEarnings');
     elements.resultElements.totalMaturityValue = document.getElementById('totalMaturityValue');
@@ -251,19 +253,25 @@ function displayResults(results) {
             const totalPendleFee = pointsBreakdown.pendleFee * marketData.daysToMaturity;
             const totalNetPoints = pointsBreakdown.net * marketData.daysToMaturity;
             
-            elements.resultElements.estimatedPoints.innerHTML = `
+            const pointsHTML = `
                 <div style="font-weight: 700;">${formatNumber(totalNetPoints)} points (NET)</div>
                 <div style="font-size: 0.85em; color: #6c757d; margin-top: 4px;">
                     ${formatNumber(pointsBreakdown.net)} daily | ${formatNumber(totalGrossPoints)} gross<br>
                     <span style="color: #dc2626;">- ${formatNumber(totalPendleFee)} Pendle fees (5%)</span>
                 </div>
             `;
+            
+            // Update both points displays
+            elements.resultElements.estimatedPoints.innerHTML = pointsHTML;
+            elements.resultElements.maturityPoints.innerHTML = pointsHTML;
         } catch (error) {
             console.error('Error calculating points:', error);
             elements.resultElements.estimatedPoints.textContent = 'N/A';
+            elements.resultElements.maturityPoints.textContent = 'N/A';
         }
     } else {
         elements.resultElements.estimatedPoints.textContent = 'N/A';
+        elements.resultElements.maturityPoints.textContent = 'N/A';
     }
     
     // Calculate and display maturity earnings based on YT amount received (reuse ytAmount from above)
@@ -925,16 +933,19 @@ function displayExistingYtResults(ytAmount, ytCost) {
             const totalPendleFee = pointsBreakdown.pendleFee * marketData.daysToMaturity;
             const totalNetPoints = pointsBreakdown.net * marketData.daysToMaturity;
             
-            elements.resultElements.estimatedPoints.innerHTML = `
+            const pointsHTML = `
                 <div style="font-weight: 700;">${formatNumber(totalNetPoints)} points (NET)</div>
                 <div style="font-size: 0.85em; color: #6c757d; margin-top: 4px;">
                     ${formatNumber(pointsBreakdown.net)} daily | ${formatNumber(totalGrossPoints)} gross<br>
                     <span style="color: #dc2626;">- ${formatNumber(totalPendleFee)} Pendle fees (5%)</span>
                 </div>
             `;
+            
+            // Update maturity points display (the one that's visible)
+            elements.resultElements.maturityPoints.innerHTML = pointsHTML;
         } catch (error) {
             console.error('Error calculating points:', error);
-            elements.resultElements.estimatedPoints.textContent = 'N/A';
+            elements.resultElements.maturityPoints.textContent = 'N/A';
         }
     }
     

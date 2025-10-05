@@ -639,6 +639,26 @@
             
             <button class="calculate-btn">Calculate Moonshot</button>
             
+            <!-- Divider -->
+            <div style="display: flex; align-items: center; margin: 40px 0 32px 0;">
+                <div style="flex: 1; height: 1px; background: linear-gradient(to right, transparent, var(--border-gray), transparent);"></div>
+                <span style="padding: 0 20px; color: var(--text-gray); font-weight: 600; font-size: 0.9rem;">OR</span>
+                <div style="flex: 1; height: 1px; background: linear-gradient(to left, transparent, var(--border-gray), transparent);"></div>
+            </div>
+            
+            <!-- Existing YT Holder Section -->
+            <div class="input-section">
+                <label for="walletAddress">
+                    🔍 Check Your Existing YT Position
+                    <span style="font-size: 0.85rem; font-weight: 400; color: var(--text-gray); display: block; margin-top: 4px;">
+                        Enter your wallet address to see your current YT holdings and estimated points
+                    </span>
+                </label>
+                <input type="text" id="walletAddress" placeholder="0x..." style="font-family: 'SF Mono', Monaco, monospace;">
+            </div>
+            
+            <button class="calculate-btn" id="checkPositionBtn">Check My Position</button>
+            
             <div id="loading" class="loading" style="display: none;">
                 Calculating...
             </div>

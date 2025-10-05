@@ -6,6 +6,8 @@
 const elements = {
     amountInput: null,
     calculateBtn: null,
+    walletAddressInput: null,
+    checkPositionBtn: null,
     loadingDiv: null,
     resultsDiv: null,
     errorDiv: null,
@@ -45,6 +47,8 @@ function initializeApp() {
     // Get DOM elements
     elements.amountInput = document.getElementById('amount');
     elements.calculateBtn = document.querySelector('.calculate-btn');
+    elements.walletAddressInput = document.getElementById('walletAddress');
+    elements.checkPositionBtn = document.getElementById('checkPositionBtn');
     elements.loadingDiv = document.getElementById('loading');
     elements.resultsDiv = document.getElementById('results');
     elements.errorDiv = document.getElementById('error');
@@ -88,10 +92,20 @@ function setupEventListeners() {
     // Calculate button click
     elements.calculateBtn.addEventListener('click', handleCalculateClick);
     
-    // Enter key on input
+    // Check position button click
+    elements.checkPositionBtn.addEventListener('click', handleCheckPositionClick);
+    
+    // Enter key on amount input
     elements.amountInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             handleCalculateClick();
+        }
+    });
+    
+    // Enter key on wallet address input
+    elements.walletAddressInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            handleCheckPositionClick();
         }
     });
     
@@ -110,6 +124,25 @@ async function handleCalculateClick() {
     }
 
     await performCalculation(amount);
+}
+
+/**
+ * Handle check position button click
+ */
+async function handleCheckPositionClick() {
+    const walletAddress = elements.walletAddressInput.value.trim();
+    
+    if (!walletAddress) {
+        showError('Please enter a wallet address');
+        return;
+    }
+    
+    if (!walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+        showError('Invalid wallet address format. Must be 42 characters starting with 0x');
+        return;
+    }
+    
+    await checkWalletPosition(walletAddress);
 }
 
 /**
@@ -753,9 +786,122 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity) {
     }
 }
 
+/**
+ * Check wallet YT position for existing holders
+ * @param {string} walletAddress - Wallet address to check
+ */
+async function checkWalletPosition(walletAddress) {
+    try {
+        // Show loading state
+        setLoadingState(true);
+        hideError();
+        hideResults();
+        
+        // Fetch wallet position
+        const positionResponse = await window.PendleAPI.getWalletYtPosition(walletAddress);
+        
+        if (!positionResponse.success) {
+            showError(positionResponse.error);
+            return;
+        }
+        
+        const { ytAmount, ytValuation } = positionResponse.data;
+        
+        // Calculate points and ROI using existing functions
+        if (marketData.weightedTvl && marketData.daysToMaturity > 0) {
+            // Display results as if user bought this amount
+            const formattedResults = {
+                inputAmount: `${ytValuation.toFixed(2)} USDC`,
+                netFromTaker: `${ytValuation.toFixed(2)} USDC (invested)`,
+                netToTaker: `${ytAmount.toFixed(6)} YT`,
+                fee: 'N/A (existing position)'
+            };
+            
+            displayExistingHolderResults(formattedResults, ytAmount, ytValuation);
+        } else {
+            showError('Market data not loaded yet. Please try again.');
+        }
+        
+    } catch (error) {
+        console.error('Wallet position check error:', error);
+        showError('An unexpected error occurred. Please try again.');
+    } finally {
+        setLoadingState(false);
+    }
+}
+
+/**
+ * Display results for existing YT holder
+ * @param {Object} results - Formatted position results
+ * @param {number} ytAmount - YT amount held
+ * @param {number} ytValuation - Current valuation in USD
+ */
+function displayExistingHolderResults(results, ytAmount, ytValuation) {
+    // Update trade result elements
+    elements.resultElements.inputAmount.innerHTML = `
+        <div>${results.netToTaker}</div>
+        <div style="font-size: 0.85em; color: #6c757d; margin-top: 4px;">
+            Current Value: ${results.inputAmount}
+        </div>
+    `;
+    elements.resultElements.netFromTaker.textContent = results.netFromTaker;
+    elements.resultElements.netToTaker.textContent = results.netToTaker;
+    elements.resultElements.fee.textContent = results.fee;
+    
+    // Calculate and display estimated points
+    if (ytAmount > 0 && marketData.weightedTvl && marketData.daysToMaturity > 0) {
+        try {
+            const pointsBreakdown = window.PendleAPI.calculateDailyPoints(ytAmount, marketData.weightedTvl, 'yt');
+            const totalGrossPoints = pointsBreakdown.gross * marketData.daysToMaturity;
+            const totalPendleFee = pointsBreakdown.pendleFee * marketData.daysToMaturity;
+            const totalNetPoints = pointsBreakdown.net * marketData.daysToMaturity;
+            
+            elements.resultElements.estimatedPoints.innerHTML = `
+                <div style="font-weight: 700;">${formatNumber(totalNetPoints)} points (NET)</div>
+                <div style="font-size: 0.85em; color: #6c757d; margin-top: 4px;">
+                    ${formatNumber(pointsBreakdown.net)} daily | ${formatNumber(totalGrossPoints)} gross<br>
+                    <span style="color: #dc2626;">- ${formatNumber(totalPendleFee)} Pendle fees (5%)</span>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error calculating points:', error);
+            elements.resultElements.estimatedPoints.textContent = 'N/A';
+        }
+    }
+    
+    // Calculate and display maturity earnings
+    if (ytAmount > 0 && marketData.underlyingApy > 0 && marketData.daysToMaturity > 0) {
+        try {
+            const maturityReturn = window.PendleAPI.calculateMaturityApy(marketData.underlyingApy, marketData.daysToMaturity);
+            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityReturn, marketData.underlyingApy, marketData.daysToMaturity, ytValuation);
+            
+            // Display ROI
+            elements.resultElements.maturityApy.textContent = `${earnings.roiPercentage}%`;
+            
+            // Display expected earnings
+            elements.resultElements.expectedEarnings.textContent = `${earnings.earnings.toFixed(2)} USDC`;
+            
+            // Display total yield value
+            elements.resultElements.totalMaturityValue.textContent = `${earnings.totalValue.toFixed(2)} USDC (YT → 0)`;
+        } catch (error) {
+            console.error('Error calculating maturity earnings:', error);
+            elements.resultElements.maturityApy.textContent = 'Error';
+            elements.resultElements.expectedEarnings.textContent = 'Error';
+            elements.resultElements.totalMaturityValue.textContent = 'Error';
+        }
+    }
+    
+    // Display Almanak points scenarios
+    displayAlmanakScenarios(ytAmount, marketData.daysToMaturity);
+    
+    // Show results
+    showResults();
+}
+
 // Export functions for potential external use
 window.MoonshotCalculator = {
     calculateMoonshot: handleCalculateClick,
+    checkWalletPosition: handleCheckPositionClick,
     resetForm,
     validateAmount,
     refreshMarketData,

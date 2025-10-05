@@ -582,6 +582,90 @@ function calculateAlmanakPointsEarnings(ytAmount, daysToMaturity, weightedTvl, u
     });
 }
 
+/**
+ * Fetch wallet YT position for existing holders
+ * @param {string} walletAddress - Ethereum wallet address
+ * @returns {Promise<Object>} Position data
+ */
+async function getWalletYtPosition(walletAddress) {
+    try {
+        // Validate wallet address format
+        if (!walletAddress || !walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+            throw new Error('Invalid wallet address format');
+        }
+        
+        const response = await fetch(
+            `https://api-v2.pendle.finance/core/v1/dashboard/positions/database/${walletAddress}?filterUsd=0.1`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Find Chain ID 1 (Ethereum) positions
+        const ethPositions = data.positions?.find(p => p.chainId === 1);
+        
+        if (!ethPositions) {
+            return {
+                success: false,
+                error: 'No Ethereum positions found for this wallet'
+            };
+        }
+        
+        // Find our specific market in open positions
+        const targetMarketId = `1-${PENDLE_CONFIG.MARKET}`;
+        const marketPosition = ethPositions.openPositions?.find(
+            p => p.marketId === targetMarketId
+        );
+        
+        if (!marketPosition) {
+            return {
+                success: false,
+                error: 'No active YT position found for alUSD market'
+            };
+        }
+        
+        // Extract YT position data
+        const ytBalance = marketPosition.yt?.balance || "0";
+        const ytValuation = marketPosition.yt?.valuation || 0;
+        
+        if (ytBalance === "0" || ytValuation === 0) {
+            return {
+                success: false,
+                error: 'No YT tokens held in this market'
+            };
+        }
+        
+        // Convert balance from wei (6 decimals for YT)
+        const ytAmount = parseFloat(ytBalance) / Math.pow(10, 6);
+        
+        return {
+            success: true,
+            data: {
+                ytAmount: ytAmount,
+                ytValuation: ytValuation,
+                walletAddress: walletAddress,
+                marketId: targetMarketId
+            }
+        };
+        
+    } catch (error) {
+        console.error('Wallet Position API Error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to fetch wallet position'
+        };
+    }
+}
+
 // Export functions for use in other files
 window.PendleAPI = {
     calculateMoonshot,
@@ -595,6 +679,7 @@ window.PendleAPI = {
     calculateDailyPoints,
     calculateAlmanakPointsApy,
     calculateAlmanakPointsEarnings,
+    getWalletYtPosition,
     toWei,
     formatFromWei,
     PENDLE_CONFIG,

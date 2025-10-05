@@ -317,8 +317,17 @@ function displayResults(results) {
  */
 function setLoadingState(isLoading) {
     elements.loadingDiv.style.display = isLoading ? 'block' : 'none';
-    elements.calculateBtn.disabled = isLoading;
-    elements.calculateBtn.textContent = isLoading ? 'Calculating...' : 'Calculate Moonshot';
+    
+    // Disable/enable both calculate buttons
+    if (elements.calculateNewBtn) {
+        elements.calculateNewBtn.disabled = isLoading;
+        elements.calculateNewBtn.textContent = isLoading ? 'Calculating...' : 'Calculate Moonshot';
+    }
+    
+    if (elements.calculateExistingBtn) {
+        elements.calculateExistingBtn.disabled = isLoading;
+        elements.calculateExistingBtn.textContent = isLoading ? 'Calculating...' : 'Calculate My Returns';
+    }
 }
 
 /**

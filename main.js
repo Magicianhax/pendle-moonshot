@@ -195,9 +195,18 @@ function displayResults(results) {
     const ytAmount = parseFloat(results.netToTaker.replace(/[^\d.-]/g, ''));
     if (ytAmount > 0 && marketData.weightedTvl && marketData.daysToMaturity > 0) {
         try {
-            const dailyPoints = window.PendleAPI.calculateDailyPoints(ytAmount, marketData.weightedTvl, 'yt');
-            const totalPoints = dailyPoints * marketData.daysToMaturity;
-            elements.resultElements.estimatedPoints.innerHTML = `${formatNumber(totalPoints)} points<br><span style="font-size: 0.85em; color: #6c757d;">(${formatNumber(dailyPoints)} daily)</span>`;
+            const pointsBreakdown = window.PendleAPI.calculateDailyPoints(ytAmount, marketData.weightedTvl, 'yt');
+            const totalGrossPoints = pointsBreakdown.gross * marketData.daysToMaturity;
+            const totalPendleFee = pointsBreakdown.pendleFee * marketData.daysToMaturity;
+            const totalNetPoints = pointsBreakdown.net * marketData.daysToMaturity;
+            
+            elements.resultElements.estimatedPoints.innerHTML = `
+                <div style="font-weight: 700;">${formatNumber(totalNetPoints)} points (NET)</div>
+                <div style="font-size: 0.85em; color: #6c757d; margin-top: 4px;">
+                    ${formatNumber(pointsBreakdown.net)} daily | ${formatNumber(totalGrossPoints)} gross<br>
+                    <span style="color: #dc2626;">- ${formatNumber(totalPendleFee)} Pendle fees (5%)</span>
+                </div>
+            `;
         } catch (error) {
             console.error('Error calculating points:', error);
             elements.resultElements.estimatedPoints.textContent = 'N/A';
@@ -460,6 +469,10 @@ function displayTvlBreakdown() {
     const otherDailyPoints = (weighted.weightedOther / totalWeighted) * DAILY_POINTS;
     const referralDailyPoints = 16667; // 5% reserved for referral program
     
+    // Calculate Pendle fees (5% from YT points only)
+    const ytPendleFee = ytDailyPoints * 0.05;
+    const ytNetPoints = ytDailyPoints * 0.95;
+    
     const tableHTML = `
         <!-- Overall TVL Sources Section -->
         <tr style="background-color: #f0f9ff; border-bottom: 2px solid #0284c7;">
@@ -499,8 +512,24 @@ function displayTvlBreakdown() {
             <td>${formatCurrency(weighted.ytTvl)}</td>
             <td>5x</td>
             <td>${formatCurrency(weighted.weightedYt)}</td>
-            <td><strong>${formatNumber(ytDailyPoints)}</strong></td>
+            <td><strong>${formatNumber(ytDailyPoints)}</strong> <span style="font-size: 0.8em; color: #6c757d;">(gross)</span></td>
             <td>${ytShare.toFixed(2)}%</td>
+        </tr>
+        <tr style="background-color: #fee2e2;">
+            <td style="padding-left: 30px;"><span class="tvl-type" style="color: #991b1b;">├─ Pendle Fee (5% from YT)</span></td>
+            <td style="color: #991b1b;">-</td>
+            <td style="color: #991b1b;">-</td>
+            <td style="color: #991b1b;">-</td>
+            <td style="color: #991b1b;"><strong>-${formatNumber(ytPendleFee)}</strong></td>
+            <td style="color: #991b1b;">-${((ytPendleFee / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
+        </tr>
+        <tr style="background-color: #dcfce7;">
+            <td style="padding-left: 30px;"><span class="tvl-type" style="color: #166534;">└─ YT NET Points</span></td>
+            <td style="color: #166534;">-</td>
+            <td style="color: #166534;">-</td>
+            <td style="color: #166534;">-</td>
+            <td style="color: #166534;"><strong>${formatNumber(ytNetPoints)}</strong> <span style="font-size: 0.8em;">(net)</span></td>
+            <td style="color: #166534;">${((ytNetPoints / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
         </tr>
         <tr>
             <td><span class="tvl-type">LP (Liquidity)</span><span class="tvl-boost boost-1-25x">1.25x Boost</span></td>
@@ -542,13 +571,21 @@ function displayTvlBreakdown() {
             <td><strong>${formatNumber(referralDailyPoints)}</strong></td>
             <td>5%</td>
         </tr>
+        <tr style="background-color: #fef3c7; border-top: 1px solid #f59e0b;">
+            <td><span class="tvl-type" style="color: #92400e;">Pendle Fees (goes to Pendle)</span></td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td style="color: #92400e;"><strong>${formatNumber(ytPendleFee)}</strong></td>
+            <td style="color: #92400e;">${((ytPendleFee / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
+        </tr>
         <tr class="tvl-total-row">
-            <td><strong>TOTAL (including referrals)</strong></td>
+            <td><strong>TOTAL DISTRIBUTED (to users)</strong></td>
             <td><strong>${formatCurrency(weighted.totalTvl)}</strong></td>
             <td>-</td>
             <td><strong>${formatCurrency(totalWeighted)}</strong></td>
-            <td><strong>${formatNumber(DAILY_POINTS + referralDailyPoints)}</strong></td>
-            <td><strong>100%</strong></td>
+            <td><strong>${formatNumber(ytNetPoints + lpDailyPoints + curveDailyPoints + otherDailyPoints + referralDailyPoints)}</strong></td>
+            <td><strong>${(((ytNetPoints + lpDailyPoints + curveDailyPoints + otherDailyPoints + referralDailyPoints) / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</strong></td>
         </tr>
     `;
     
@@ -606,21 +643,21 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity) {
             initialInvestment
         );
         
-        // Calculate breakeven FDV
-        const dailyPoints = window.PendleAPI.calculateDailyPoints(ytAmount, marketData.weightedTvl, 'yt');
-        const totalPoints = dailyPoints * daysToMaturity;
+        // Calculate breakeven FDV (using NET points after Pendle fee)
+        const pointsBreakdown = window.PendleAPI.calculateDailyPoints(ytAmount, marketData.weightedTvl, 'yt');
+        const totalNetPoints = pointsBreakdown.net * daysToMaturity;
         const dailyUnderlyingYield = ytAmount * (marketData.underlyingApy / 365);
         const totalUnderlyingYield = dailyUnderlyingYield * daysToMaturity;
         
         // FDV where Total Earnings = Initial Investment
-        // (Points × Token Price) + Underlying Yield = Initial Investment
-        // Token Price = (Initial Investment - Underlying Yield) / Total Points
+        // (NET Points × Token Price) + Underlying Yield = Initial Investment
+        // Token Price = (Initial Investment - Underlying Yield) / Total NET Points
         const neededPointsValue = initialInvestment - totalUnderlyingYield;
         let breakevenFdv = null;
         let breakevenTokenPrice = null;
         
-        if (neededPointsValue > 0 && totalPoints > 0) {
-            breakevenTokenPrice = neededPointsValue / totalPoints;
+        if (neededPointsValue > 0 && totalNetPoints > 0) {
+            breakevenTokenPrice = neededPointsValue / totalNetPoints;
             breakevenFdv = (breakevenTokenPrice * 1000000000) / 1000000; // Convert to millions
         }
         
@@ -646,8 +683,9 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity) {
                 breakevenColor = '#f59e0b'; // orange
             }
             
-            // Format underlying yield portion
+            // Format underlying yield portion and Pendle fee
             const yieldFormatted = `$${scenario.underlyingYieldValue.toFixed(2)}`;
+            const pendleFeeFormatted = `$${scenario.pendleFeeUsdValue.toFixed(2)}`;
             
             return `
                 <tr>
@@ -655,7 +693,10 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity) {
                     <td class="apy-cell" style="color: ${roiColor};">${scenario.roiPercentage}%</td>
                     <td class="usd-cell">
                         ${scenario.earningsFormatted}
-                        <div style="font-size: 0.75em; color: #6c757d; font-weight: normal;">(${yieldFormatted} yield)</div>
+                        <div style="font-size: 0.75em; color: #6c757d; font-weight: normal; margin-top: 2px;">
+                            ${yieldFormatted} yield<br>
+                            <span style="color: #dc2626;">-${pendleFeeFormatted} Pendle fee (5%)</span>
+                        </div>
                     </td>
                     <td style="font-weight: 600;">${daysToMaturity} days</td>
                     <td class="breakeven-cell" style="color: ${breakevenColor}; font-weight: 600;">${scenario.breakevenStatus}</td>

@@ -462,15 +462,28 @@ function calculateWeightedTvl(tvlData) {
  * @param {number} amount - User's YT amount
  * @param {Object} weightedTvl - Weighted TVL data
  * @param {string} type - Type of position ('yt', 'lp', 'other')
- * @returns {number} Daily points earned
+ * @returns {Object} Daily points breakdown with Pendle fees
  */
 function calculateDailyPoints(amount, weightedTvl, type = 'yt') {
     const boost = ALMANAK_POINTS_CONFIG.boosts[type];
     const weightedAmount = amount * boost;
     const pointsShare = weightedAmount / weightedTvl.totalWeightedTvl;
-    const dailyPoints = pointsShare * ALMANAK_POINTS_CONFIG.dailyPoints;
+    const grossDailyPoints = pointsShare * ALMANAK_POINTS_CONFIG.dailyPoints;
     
-    return dailyPoints;
+    // Pendle takes 5% fee ONLY from YT points (not from overall points)
+    let pendleFee = 0;
+    let netDailyPoints = grossDailyPoints;
+    
+    if (type === 'yt') {
+        pendleFee = grossDailyPoints * 0.05;
+        netDailyPoints = grossDailyPoints * 0.95;
+    }
+    
+    return {
+        gross: grossDailyPoints,
+        pendleFee: pendleFee,
+        net: netDailyPoints
+    };
 }
 
 /**
@@ -503,11 +516,13 @@ function calculateAlmanakPointsApy(daysToMaturity, weightedTvl) {
  * @returns {Array} Array of scenarios with earnings calculations
  */
 function calculateAlmanakPointsEarnings(ytAmount, daysToMaturity, weightedTvl, underlyingApy, initialInvestment) {
-    // Calculate daily points for the user's YT position
-    const dailyPoints = calculateDailyPoints(ytAmount, weightedTvl, 'yt');
+    // Calculate daily points for the user's YT position (returns object with gross, pendleFee, net)
+    const dailyPointsBreakdown = calculateDailyPoints(ytAmount, weightedTvl, 'yt');
     
-    // Total points earned until maturity
-    const totalPoints = dailyPoints * daysToMaturity;
+    // Total points earned until maturity (use NET points after Pendle fee)
+    const totalGrossPoints = dailyPointsBreakdown.gross * daysToMaturity;
+    const totalPendleFee = dailyPointsBreakdown.pendleFee * daysToMaturity;
+    const totalNetPoints = dailyPointsBreakdown.net * daysToMaturity;
     
     // Calculate daily underlying yield earnings
     const dailyUnderlyingYield = ytAmount * (underlyingApy / 365);
@@ -518,9 +533,10 @@ function calculateAlmanakPointsEarnings(ytAmount, daysToMaturity, weightedTvl, u
     // Calculate earnings for each FDV scenario
     return ALMANAK_POINTS_CONFIG.fdvScenarios.map(fdv => {
         const tokenPrice = (fdv * 1000000) / ALMANAK_POINTS_CONFIG.totalSupply;
-        const pointsUsdValue = totalPoints * tokenPrice;
+        const pointsUsdValue = totalNetPoints * tokenPrice; // Use NET points after fee
+        const pendleFeeUsdValue = totalPendleFee * tokenPrice; // Value of Pendle fee
         
-        // Total earnings = points value + underlying yield
+        // Total earnings = NET points value + underlying yield
         const totalEarnings = pointsUsdValue + totalUnderlyingYield;
         
         // Calculate TRUE ROI accounting for loss of principal (YT → 0)
@@ -529,8 +545,8 @@ function calculateAlmanakPointsEarnings(ytAmount, daysToMaturity, weightedTvl, u
         const roi = initialInvestment > 0 ? ((totalEarnings - initialInvestment) / initialInvestment) * 100 : 0;
         
         // Calculate breakeven time
-        // Daily total earnings = daily points value + daily underlying yield
-        const dailyPointsValue = dailyPoints * tokenPrice;
+        // Daily total earnings = daily NET points value + daily underlying yield
+        const dailyPointsValue = dailyPointsBreakdown.net * tokenPrice;
         const dailyTotalEarnings = dailyPointsValue + dailyUnderlyingYield;
         const breakevenDays = dailyTotalEarnings > 0 ? initialInvestment / dailyTotalEarnings : Infinity;
         
@@ -547,9 +563,14 @@ function calculateAlmanakPointsEarnings(ytAmount, daysToMaturity, weightedTvl, u
         return {
             fdv: fdv,
             tokenPrice: tokenPrice,
-            dailyPoints: dailyPoints,
-            totalPoints: totalPoints,
-            pointsUsdValue: pointsUsdValue,
+            dailyPoints: dailyPointsBreakdown.net, // NET daily points
+            dailyGrossPoints: dailyPointsBreakdown.gross, // GROSS daily points
+            dailyPendleFee: dailyPointsBreakdown.pendleFee, // Daily Pendle fee
+            totalPoints: totalNetPoints, // NET total points
+            totalGrossPoints: totalGrossPoints, // GROSS total points
+            totalPendleFee: totalPendleFee, // Total Pendle fee in points
+            pendleFeeUsdValue: pendleFeeUsdValue, // Pendle fee USD value
+            pointsUsdValue: pointsUsdValue, // NET points USD value
             underlyingYieldValue: totalUnderlyingYield,
             totalEarnings: totalEarnings,
             roiPercentage: roi.toFixed(2),

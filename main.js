@@ -301,7 +301,7 @@ function displayResults(results) {
     }
     
     // Display Almanak points scenarios based on YT amount (reuse ytAmount from above)
-    displayAlmanakScenarios(ytAmount, marketData.daysToMaturity);
+    displayAlmanakScenarios(ytAmount, marketData.daysToMaturity, initialInvestment);
     
     // Show results
     showResults();
@@ -678,8 +678,9 @@ function formatNumber(value) {
  * Display Almanak points ROI scenarios with breakeven
  * @param {number} ytAmount - YT amount received (not input amount)
  * @param {number} daysToMaturity - Days remaining until maturity
+ * @param {number} initialInvestment - Initial investment amount (optional, will try to get from input)
  */
-function displayAlmanakScenarios(ytAmount, daysToMaturity) {
+function displayAlmanakScenarios(ytAmount, daysToMaturity, initialInvestment = null) {
     if (ytAmount <= 0 || daysToMaturity <= 0) {
         elements.almanakTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Calculate trade to see Almanak points scenarios</td></tr>';
         return;
@@ -691,8 +692,10 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity) {
         return;
     }
     
-    // Get initial investment
-    const initialInvestment = parseFloat(elements.amountInput.value);
+    // Get initial investment if not provided
+    if (initialInvestment === null) {
+        initialInvestment = parseFloat(elements.amountInput.value);
+    }
     
     try {
         const scenarios = window.PendleAPI.calculateAlmanakPointsEarnings(
@@ -957,8 +960,8 @@ function displayExistingYtResults(ytAmount, ytCost) {
         }
     }
     
-    // Display Almanak points scenarios
-    displayAlmanakScenarios(ytAmount, marketData.daysToMaturity);
+    // Display Almanak points scenarios (pass ytCost as initialInvestment)
+    displayAlmanakScenarios(ytAmount, marketData.daysToMaturity, ytCost);
     
     // Show results
     showResults();

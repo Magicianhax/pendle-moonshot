@@ -632,32 +632,46 @@
                 </div>
             </div>
             
-            <div class="input-section">
-                <label for="amount">Enter Amount (alUSD)</label>
-                <input type="number" id="amount" placeholder="20" step="0.01" min="0">
+            <!-- Trade Type Toggle -->
+            <div style="display: flex; gap: 12px; margin-bottom: 32px; background: var(--accent-gray); padding: 8px; border-radius: 12px;">
+                <button class="toggle-btn active" id="newTradeBtn" style="flex: 1; padding: 14px; border: 2px solid var(--primary-black); background: var(--primary-black); color: white; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: var(--transition);">
+                    🆕 New Trade
+                </button>
+                <button class="toggle-btn" id="existingYtBtn" style="flex: 1; padding: 14px; border: 2px solid var(--border-gray); background: white; color: var(--primary-black); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: var(--transition);">
+                    💼 Existing YT Holder
+                </button>
             </div>
-            
-            <button class="calculate-btn">Calculate Moonshot</button>
-            
-            <!-- Divider -->
-            <div style="display: flex; align-items: center; margin: 40px 0 32px 0;">
-                <div style="flex: 1; height: 1px; background: linear-gradient(to right, transparent, var(--border-gray), transparent);"></div>
-                <span style="padding: 0 20px; color: var(--text-gray); font-weight: 600; font-size: 0.9rem;">OR</span>
-                <div style="flex: 1; height: 1px; background: linear-gradient(to left, transparent, var(--border-gray), transparent);"></div>
+
+            <!-- New Trade Section -->
+            <div id="newTradeSection">
+                <div class="input-section">
+                    <label for="amount">Enter Amount (alUSD)</label>
+                    <input type="number" id="amount" placeholder="20" step="0.01" min="0">
+                </div>
+                
+                <button class="calculate-btn" id="calculateNewBtn">Calculate Moonshot</button>
             </div>
-            
+
             <!-- Existing YT Holder Section -->
-            <div class="input-section">
-                <label for="walletAddress">
-                    🔍 Check Your Existing YT Position
-                    <span style="font-size: 0.85rem; font-weight: 400; color: var(--text-gray); display: block; margin-top: 4px;">
-                        Enter your wallet address to see your current YT holdings and estimated points
-                    </span>
-                </label>
-                <input type="text" id="walletAddress" placeholder="0x..." style="font-family: 'SF Mono', Monaco, monospace;">
+            <div id="existingYtSection" style="display: none;">
+                <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #93c5fd; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;">
+                    <p style="font-size: 0.9rem; color: #1e40af; margin: 0;">
+                        <strong>💡 For Existing YT Holders:</strong> Enter your current YT holdings and what you paid for them to see your expected points and ROI at different Almanak FDV scenarios.
+                    </p>
+                </div>
+                
+                <div class="input-section">
+                    <label for="ytAmount">Your YT Amount</label>
+                    <input type="number" id="ytAmount" placeholder="100" step="0.01" min="0">
+                </div>
+                
+                <div class="input-section">
+                    <label for="ytCost">Your Total Cost (USD)</label>
+                    <input type="number" id="ytCost" placeholder="50" step="0.01" min="0">
+                </div>
+                
+                <button class="calculate-btn" id="calculateExistingBtn">Calculate My Returns</button>
             </div>
-            
-            <button class="calculate-btn" id="checkPositionBtn">Check My Position</button>
             
             <div id="loading" class="loading" style="display: none;">
                 Calculating...

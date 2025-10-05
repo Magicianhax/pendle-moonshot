@@ -6,8 +6,6 @@
 const elements = {
     amountInput: null,
     calculateBtn: null,
-    walletAddressInput: null,
-    checkPositionBtn: null,
     loadingDiv: null,
     resultsDiv: null,
     errorDiv: null,
@@ -25,7 +23,17 @@ const elements = {
         expectedEarnings: null,
         totalMaturityValue: null
     },
-    almanakTableBody: null
+    almanakTableBody: null,
+    // Toggle buttons
+    newTradeBtn: null,
+    existingYtBtn: null,
+    newTradeSection: null,
+    existingYtSection: null,
+    // Existing YT inputs
+    ytAmountInput: null,
+    ytCostInput: null,
+    calculateExistingBtn: null,
+    calculateNewBtn: null
 };
 
 /**
@@ -46,9 +54,6 @@ let marketData = {
 function initializeApp() {
     // Get DOM elements
     elements.amountInput = document.getElementById('amount');
-    elements.calculateBtn = document.querySelector('.calculate-btn');
-    elements.walletAddressInput = document.getElementById('walletAddress');
-    elements.checkPositionBtn = document.getElementById('checkPositionBtn');
     elements.loadingDiv = document.getElementById('loading');
     elements.resultsDiv = document.getElementById('results');
     elements.errorDiv = document.getElementById('error');
@@ -56,6 +61,18 @@ function initializeApp() {
     elements.underlyingApy = document.getElementById('underlyingApy');
     elements.impliedApy = document.getElementById('impliedApy');
     elements.tvlTableBody = document.getElementById('tvlTableBody');
+    
+    // Get toggle elements
+    elements.newTradeBtn = document.getElementById('newTradeBtn');
+    elements.existingYtBtn = document.getElementById('existingYtBtn');
+    elements.newTradeSection = document.getElementById('newTradeSection');
+    elements.existingYtSection = document.getElementById('existingYtSection');
+    
+    // Get existing YT elements
+    elements.ytAmountInput = document.getElementById('ytAmount');
+    elements.ytCostInput = document.getElementById('ytCost');
+    elements.calculateExistingBtn = document.getElementById('calculateExistingBtn');
+    elements.calculateNewBtn = document.getElementById('calculateNewBtn');
     
     // Get result elements
     elements.resultElements.inputAmount = document.getElementById('inputAmount');
@@ -73,7 +90,9 @@ function initializeApp() {
         tvlTableBody: !!elements.tvlTableBody,
         underlyingApy: !!elements.underlyingApy,
         impliedApy: !!elements.impliedApy,
-        countdown: !!elements.countdown
+        countdown: !!elements.countdown,
+        newTradeBtn: !!elements.newTradeBtn,
+        existingYtBtn: !!elements.existingYtBtn
     });
 
     // Set up event listeners
@@ -89,28 +108,40 @@ function initializeApp() {
  * Set up event listeners
  */
 function setupEventListeners() {
-    // Calculate button click
-    elements.calculateBtn.addEventListener('click', handleCalculateClick);
+    // Toggle buttons
+    elements.newTradeBtn.addEventListener('click', () => switchToNewTrade());
+    elements.existingYtBtn.addEventListener('click', () => switchToExistingYt());
     
-    // Check position button click
-    elements.checkPositionBtn.addEventListener('click', handleCheckPositionClick);
+    // Calculate button click for new trade
+    elements.calculateNewBtn.addEventListener('click', handleCalculateClick);
     
-    // Enter key on amount input
+    // Calculate button click for existing YT
+    elements.calculateExistingBtn.addEventListener('click', handleCalculateExisting);
+    
+    // Enter key on input (new trade)
     elements.amountInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             handleCalculateClick();
         }
     });
     
-    // Enter key on wallet address input
-    elements.walletAddressInput.addEventListener('keypress', function(e) {
+    // Enter key on existing YT inputs
+    elements.ytAmountInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            handleCheckPositionClick();
+            handleCalculateExisting();
+        }
+    });
+    
+    elements.ytCostInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            handleCalculateExisting();
         }
     });
     
     // Input validation
     elements.amountInput.addEventListener('input', validateInput);
+    elements.ytAmountInput.addEventListener('input', validateInput);
+    elements.ytCostInput.addEventListener('input', validateInput);
 }
 
 /**
@@ -124,25 +155,6 @@ async function handleCalculateClick() {
     }
 
     await performCalculation(amount);
-}
-
-/**
- * Handle check position button click
- */
-async function handleCheckPositionClick() {
-    const walletAddress = elements.walletAddressInput.value.trim();
-    
-    if (!walletAddress) {
-        showError('Please enter a wallet address');
-        return;
-    }
-    
-    if (!walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
-        showError('Invalid wallet address format. Must be 42 characters starting with 0x');
-        return;
-    }
-    
-    await checkWalletPosition(walletAddress);
 }
 
 /**
@@ -218,6 +230,12 @@ async function performCalculation(amount) {
  * @param {Object} results - Formatted results
  */
 function displayResults(results) {
+    // Show trade execution section (for new trades)
+    const tradeSection = document.querySelector('.results .result-section:first-child');
+    if (tradeSection) {
+        tradeSection.style.display = 'block';
+    }
+    
     // Update trade result elements (from totalTrade)
     elements.resultElements.inputAmount.textContent = results.inputAmount;
     elements.resultElements.netFromTaker.textContent = results.netFromTaker;
@@ -787,43 +805,88 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity) {
 }
 
 /**
- * Check wallet YT position for existing holders
- * @param {string} walletAddress - Wallet address to check
+ * Switch to new trade mode
  */
-async function checkWalletPosition(walletAddress) {
+function switchToNewTrade() {
+    elements.newTradeBtn.classList.add('active');
+    elements.existingYtBtn.classList.remove('active');
+    elements.newTradeBtn.style.background = 'var(--primary-black)';
+    elements.newTradeBtn.style.color = 'white';
+    elements.newTradeBtn.style.borderColor = 'var(--primary-black)';
+    elements.existingYtBtn.style.background = 'white';
+    elements.existingYtBtn.style.color = 'var(--primary-black)';
+    elements.existingYtBtn.style.borderColor = 'var(--border-gray)';
+    
+    elements.newTradeSection.style.display = 'block';
+    elements.existingYtSection.style.display = 'none';
+    
+    hideResults();
+    hideError();
+}
+
+/**
+ * Switch to existing YT holder mode
+ */
+function switchToExistingYt() {
+    elements.existingYtBtn.classList.add('active');
+    elements.newTradeBtn.classList.remove('active');
+    elements.existingYtBtn.style.background = 'var(--primary-black)';
+    elements.existingYtBtn.style.color = 'white';
+    elements.existingYtBtn.style.borderColor = 'var(--primary-black)';
+    elements.newTradeBtn.style.background = 'white';
+    elements.newTradeBtn.style.color = 'var(--primary-black)';
+    elements.newTradeBtn.style.borderColor = 'var(--border-gray)';
+    
+    elements.existingYtSection.style.display = 'block';
+    elements.newTradeSection.style.display = 'none';
+    
+    hideResults();
+    hideError();
+}
+
+/**
+ * Handle calculate button click for existing YT holders
+ */
+async function handleCalculateExisting() {
+    const ytAmount = elements.ytAmountInput.value.trim();
+    const ytCost = elements.ytCostInput.value.trim();
+    
+    // Validate inputs
+    if (!ytAmount || !ytCost) {
+        showError('Please enter both YT amount and total cost');
+        return;
+    }
+    
+    const numYtAmount = parseFloat(ytAmount);
+    const numYtCost = parseFloat(ytCost);
+    
+    if (isNaN(numYtAmount) || numYtAmount <= 0) {
+        showError('Please enter a valid YT amount');
+        return;
+    }
+    
+    if (isNaN(numYtCost) || numYtCost <= 0) {
+        showError('Please enter a valid cost');
+        return;
+    }
+    
+    // Check if market data is loaded
+    if (!marketData.weightedTvl || marketData.daysToMaturity <= 0) {
+        showError('Market data not loaded yet. Please wait a moment and try again.');
+        return;
+    }
+    
     try {
         // Show loading state
         setLoadingState(true);
         hideError();
         hideResults();
         
-        // Fetch wallet position
-        const positionResponse = await window.PendleAPI.getWalletYtPosition(walletAddress);
-        
-        if (!positionResponse.success) {
-            showError(positionResponse.error);
-            return;
-        }
-        
-        const { ytAmount, ytValuation } = positionResponse.data;
-        
-        // Calculate points and ROI using existing functions
-        if (marketData.weightedTvl && marketData.daysToMaturity > 0) {
-            // Display results as if user bought this amount
-            const formattedResults = {
-                inputAmount: `${ytValuation.toFixed(2)} USDC`,
-                netFromTaker: `${ytValuation.toFixed(2)} USDC (invested)`,
-                netToTaker: `${ytAmount.toFixed(6)} YT`,
-                fee: 'N/A (existing position)'
-            };
-            
-            displayExistingHolderResults(formattedResults, ytAmount, ytValuation);
-        } else {
-            showError('Market data not loaded yet. Please try again.');
-        }
+        // Display results for existing YT holder
+        displayExistingYtResults(numYtAmount, numYtCost);
         
     } catch (error) {
-        console.error('Wallet position check error:', error);
+        console.error('Calculation error:', error);
         showError('An unexpected error occurred. Please try again.');
     } finally {
         setLoadingState(false);
@@ -831,22 +894,16 @@ async function checkWalletPosition(walletAddress) {
 }
 
 /**
- * Display results for existing YT holder
- * @param {Object} results - Formatted position results
+ * Display results for existing YT holders
  * @param {number} ytAmount - YT amount held
- * @param {number} ytValuation - Current valuation in USD
+ * @param {number} ytCost - Total cost paid
  */
-function displayExistingHolderResults(results, ytAmount, ytValuation) {
-    // Update trade result elements
-    elements.resultElements.inputAmount.innerHTML = `
-        <div>${results.netToTaker}</div>
-        <div style="font-size: 0.85em; color: #6c757d; margin-top: 4px;">
-            Current Value: ${results.inputAmount}
-        </div>
-    `;
-    elements.resultElements.netFromTaker.textContent = results.netFromTaker;
-    elements.resultElements.netToTaker.textContent = results.netToTaker;
-    elements.resultElements.fee.textContent = results.fee;
+function displayExistingYtResults(ytAmount, ytCost) {
+    // Hide trade execution details (not relevant for existing holders)
+    const tradeSection = document.querySelector('.results .result-section:first-child');
+    if (tradeSection) {
+        tradeSection.style.display = 'none';
+    }
     
     // Calculate and display estimated points
     if (ytAmount > 0 && marketData.weightedTvl && marketData.daysToMaturity > 0) {
@@ -869,11 +926,11 @@ function displayExistingHolderResults(results, ytAmount, ytValuation) {
         }
     }
     
-    // Calculate and display maturity earnings
+    // Calculate maturity earnings based on YT amount
     if (ytAmount > 0 && marketData.underlyingApy > 0 && marketData.daysToMaturity > 0) {
         try {
             const maturityReturn = window.PendleAPI.calculateMaturityApy(marketData.underlyingApy, marketData.daysToMaturity);
-            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityReturn, marketData.underlyingApy, marketData.daysToMaturity, ytValuation);
+            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityReturn, marketData.underlyingApy, marketData.daysToMaturity, ytCost);
             
             // Display ROI
             elements.resultElements.maturityApy.textContent = `${earnings.roiPercentage}%`;
@@ -896,15 +953,23 @@ function displayExistingHolderResults(results, ytAmount, ytValuation) {
     
     // Show results
     showResults();
+    
+    console.log('Existing YT Holder Results:', {
+        ytAmount,
+        ytCost,
+        daysToMaturity: marketData.daysToMaturity
+    });
 }
 
 // Export functions for potential external use
 window.MoonshotCalculator = {
     calculateMoonshot: handleCalculateClick,
-    checkWalletPosition: handleCheckPositionClick,
+    calculateExisting: handleCalculateExisting,
     resetForm,
     validateAmount,
     refreshMarketData,
     updateCountdown,
-    displayTvlBreakdown
+    displayTvlBreakdown,
+    switchToNewTrade,
+    switchToExistingYt
 };

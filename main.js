@@ -692,7 +692,9 @@ function formatFdv(fdvInMillions) {
         const billions = fdvInMillions / 1000;
         return `${billions.toFixed(1)}B`.replace('.0B', 'B'); // Remove .0 if whole number
     }
-    return `${fdvInMillions}M`;
+    // For values under 1000M, show at most 1 decimal place, remove trailing zeros
+    const rounded = Math.round(fdvInMillions * 10) / 10;
+    return `${rounded}M`;
 }
 
 /**

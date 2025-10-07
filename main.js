@@ -683,6 +683,19 @@ function formatNumber(value) {
 }
 
 /**
+ * Format FDV value for display (show as billions for 1000M+)
+ * @param {number} fdvInMillions - FDV value in millions
+ * @returns {string} Formatted FDV string
+ */
+function formatFdv(fdvInMillions) {
+    if (fdvInMillions >= 1000) {
+        const billions = fdvInMillions / 1000;
+        return `${billions.toFixed(1)}B`.replace('.0B', 'B'); // Remove .0 if whole number
+    }
+    return `${fdvInMillions}M`;
+}
+
+/**
  * Display Almanak points ROI scenarios with breakeven
  * @param {number} ytAmount - YT amount received (not input amount)
  * @param {number} daysToMaturity - Days remaining until maturity
@@ -760,7 +773,7 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity, initialInvestment = n
             
             return `
                 <tr>
-                    <td class="fdv-cell">${scenario.fdv}M</td>
+                    <td class="fdv-cell">${formatFdv(scenario.fdv)}</td>
                     <td class="apy-cell" style="color: ${roiColor};">${scenario.roiPercentage}%</td>
                     <td class="usd-cell">
                         ${scenario.earningsFormatted}
@@ -792,7 +805,7 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity, initialInvestment = n
             // Create breakeven row
             const breakevenRow = `
                 <tr style="background-color: #dbeafe; border: 2px solid #3b82f6;">
-                    <td class="fdv-cell" style="color: #1e40af; font-weight: 700;">${breakevenFdv.toFixed(0)}M</td>
+                    <td class="fdv-cell" style="color: #1e40af; font-weight: 700;">${formatFdv(breakevenFdv)}</td>
                     <td class="apy-cell" style="color: #1e40af; font-weight: 700;">~0.00%</td>
                     <td class="usd-cell" style="color: #1e40af;">
                         $${initialInvestment.toFixed(2)}

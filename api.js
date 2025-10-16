@@ -498,13 +498,17 @@ async function fetchTvlData() {
         const syAlUsdValue = syAlUsdBalance * liveAlUsdPrice;
         results.totalTvl = results.defiLlamaTvl - syAlUsdValue;
         
-        // Calculate Other TVL
-        // Other TVL = Everything NOT in Pendle (SY, LP) and NOT in Curve
-        // Other TVL = Gross TVL - SY alUSD - Combined LP TVL (both markets) - Curve TVL
-        results.otherTvl = results.grossTvl - syAlUsdValue - results.pendleLpTvl - results.curveTvl;
+        // Calculate Other TVL (NET TVL for points allocation)
+        // Other TVL = Holders NOT using DeFi (not in Pendle, not in Curve)
+        // Formula: GROSS TVL - SY alUSD = NET TVL
+        // This represents the TVL eligible for 1x boost points
+        results.otherTvl = results.grossTvl - syAlUsdValue;
         
-        // Ensure non-negative values
-        results.otherTvl = Math.max(0, results.otherTvl);
+        console.log('📊 Other TVL Calculation:', {
+            grossTvl: results.grossTvl,
+            syAlUsdValue: syAlUsdValue,
+            otherTvl: results.otherTvl
+        });
         
         return {
             success: true,

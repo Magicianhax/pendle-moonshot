@@ -5,14 +5,74 @@ const ALMANAK_CONFIG = {
     etherscanApiKey: "NDP4JRZEF2QUCXSQMGNVRUG81KTHEPMCH6",
     alUsdToken: "0xDCD0f5ab30856F28385F641580Bbd85f88349124",
     alpUsdToken: "0x5a97b0b97197299456af841f8605543b13b12ee3",
-    ytToken: "0xd7c3fc198Bd7A50B99629cfe302006E9224f087b",
+    // Pendle YT tokens for both markets
+    ytTokenOct23: "0xd7c3fc198Bd7A50B99629cfe302006E9224f087b", // YT-alUSD October 23
+    ytTokenDec11: "0xBA31C7c0189E9B6ab6CF6b27CD3D1A4D6d3d0Fd6", // YT-alUSD December 11
     syContractAddress: "0x8e5e017d6b3F567623B5d4a690a2a686bF7BA515",
     usdcToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     curvePoolAddress: "0x463626cF9028d96eAd5084954FF634f813D5fFB9",
-    alUsdPrice: 1.0243,
-    alpUsdPrice: 1.01,
+    lagoonAlUsdApiUrl: "https://app.lagoon.finance/api/vaults?chainId=1&vault=0xDCD0f5ab30856F28385F641580Bbd85f88349124",
+    lagoonAlpUsdApiUrl: "https://app.lagoon.finance/api/vaults?chainId=1&vault=0x5a97B0B97197299456Af841F8605543b13b12eE3",
+    alUsdPrice: 1.0243, // Fallback price if API fails
+    alpUsdPrice: 1.01, // Fallback price if API fails
     usdcPrice: 1.00
 };
+
+/**
+ * Fetch live alUSD price from Lagoon Finance API
+ * @returns {Promise<number>} Live alUSD price
+ */
+async function fetchLiveAlUsdPrice() {
+    try {
+        const response = await fetch(ALMANAK_CONFIG.lagoonAlUsdApiUrl);
+        if (!response.ok) {
+            throw new Error(`Lagoon API Error: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // pricePerShare is returned as a string like "1026210" which represents 1.026210
+        // We need to divide by 1,000,000
+        if (data.pricePerShare) {
+            const price = parseFloat(data.pricePerShare) / 1000000;
+            console.log('✅ Live alUSD price from Lagoon:', price);
+            return price;
+        }
+        
+        throw new Error('pricePerShare not found in API response');
+    } catch (error) {
+        console.error('❌ Failed to fetch live alUSD price:', error);
+        // Return fallback price if API fails
+        return ALMANAK_CONFIG.alUsdPrice;
+    }
+}
+
+/**
+ * Fetch live alpUSD price from Lagoon Finance API
+ * @returns {Promise<number>} Live alpUSD price
+ */
+async function fetchLiveAlpUsdPrice() {
+    try {
+        const response = await fetch(ALMANAK_CONFIG.lagoonAlpUsdApiUrl);
+        if (!response.ok) {
+            throw new Error(`Lagoon alpUSD API Error: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // pricePerShare is returned as a string like "1009578" which represents 1.009578
+        // We need to divide by 1,000,000
+        if (data.pricePerShare) {
+            const price = parseFloat(data.pricePerShare) / 1000000;
+            console.log('✅ Live alpUSD price from Lagoon:', price);
+            return price;
+        }
+        
+        throw new Error('pricePerShare not found in API response');
+    } catch (error) {
+        console.error('❌ Failed to fetch live alpUSD price:', error);
+        // Return fallback price if API fails
+        return ALMANAK_CONFIG.alpUsdPrice;
+    }
+}
 
 exports.handler = async function(event, context) {
     // Enable CORS
@@ -29,16 +89,25 @@ exports.handler = async function(event, context) {
     }
 
     try {
+        console.log('💰 Fetching live prices from Lagoon Finance...');
+        const liveAlUsdPrice = await fetchLiveAlUsdPrice();
+        const liveAlpUsdPrice = await fetchLiveAlpUsdPrice();
+        console.log('✅ Using alUSD price:', liveAlUsdPrice);
+        console.log('✅ Using alpUSD price:', liveAlpUsdPrice);
+        
         console.log('🚀 Fetching TVL data from Etherscan...');
         
         const results = {
             alUsdSupply: 0,
             alpUsdSupply: 0,
             syAlUsdBalance: 0,
-            ytTotalSupply: 0,
+            ytTotalSupplyOct23: 0,
+            ytTotalSupplyDec11: 0,
             curveUsdcBalance: 0,
             curveAlUsdBalance: 0,
             curveTvl: 0,
+            liveAlUsdPrice: liveAlUsdPrice,
+            liveAlpUsdPrice: liveAlpUsdPrice,
             timestamp: new Date().toISOString()
         };
 
@@ -81,19 +150,34 @@ exports.handler = async function(event, context) {
             console.error("❌ SY Balance Error:", error);
         }
 
-        // Fetch YT total supply
+        // Fetch YT total supply for October 23 market
         try {
-            const ytSupplyUrl = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.ytToken}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
-            const ytResponse = await fetch(ytSupplyUrl);
-            const ytData = await ytResponse.json();
-            if (ytData.status === "1" && ytData.result) {
-                results.ytTotalSupply = parseFloat(ytData.result) / 1e6; // 6 decimals
-                console.log('✅ YT Total Supply:', results.ytTotalSupply);
+            const ytSupplyUrlOct23 = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.ytTokenOct23}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
+            const ytResponseOct23 = await fetch(ytSupplyUrlOct23);
+            const ytDataOct23 = await ytResponseOct23.json();
+            if (ytDataOct23.status === "1" && ytDataOct23.result) {
+                results.ytTotalSupplyOct23 = parseFloat(ytDataOct23.result) / 1e6; // 6 decimals
+                console.log('✅ YT Total Supply (Oct 23):', results.ytTotalSupplyOct23);
             } else {
-                console.error('❌ YT Supply failed:', ytData);
+                console.error('❌ YT Supply (Oct 23) failed:', ytDataOct23);
             }
         } catch (error) {
-            console.error("❌ YT Supply Error:", error);
+            console.error("❌ YT Supply (Oct 23) Error:", error);
+        }
+
+        // Fetch YT total supply for December 11 market
+        try {
+            const ytSupplyUrlDec11 = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.ytTokenDec11}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
+            const ytResponseDec11 = await fetch(ytSupplyUrlDec11);
+            const ytDataDec11 = await ytResponseDec11.json();
+            if (ytDataDec11.status === "1" && ytDataDec11.result) {
+                results.ytTotalSupplyDec11 = parseFloat(ytDataDec11.result) / 1e6; // 6 decimals
+                console.log('✅ YT Total Supply (Dec 11):', results.ytTotalSupplyDec11);
+            } else {
+                console.error('❌ YT Supply (Dec 11) failed:', ytDataDec11);
+            }
+        } catch (error) {
+            console.error("❌ YT Supply (Dec 11) Error:", error);
         }
 
         // Fetch Curve pool USDC balance
@@ -122,9 +206,9 @@ exports.handler = async function(event, context) {
             console.error("❌ Curve alUSD Error:", error);
         }
 
-        // Calculate Curve TVL
+        // Calculate Curve TVL using live alUSD price
         results.curveTvl = (results.curveUsdcBalance * ALMANAK_CONFIG.usdcPrice) + 
-                           (results.curveAlUsdBalance * ALMANAK_CONFIG.alUsdPrice);
+                           (results.curveAlUsdBalance * liveAlUsdPrice);
 
         console.log('🎉 All data fetched successfully');
         
@@ -149,4 +233,3 @@ exports.handler = async function(event, context) {
         };
     }
 };
-

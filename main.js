@@ -9,9 +9,18 @@ const elements = {
     loadingDiv: null,
     resultsDiv: null,
     errorDiv: null,
-    countdown: null,
-    underlyingApy: null,
-    impliedApy: null,
+    // Market selector buttons
+    marketOct23Btn: null,
+    marketDec11Btn: null,
+    // October 23 market elements
+    countdownOct23: null,
+    underlyingApyOct23: null,
+    impliedApyOct23: null,
+    // December 11 market elements
+    countdownDec11: null,
+    underlyingApyDec11: null,
+    impliedApyDec11: null,
+    // TVL table
     tvlTableBody: null,
     resultElements: {
         inputAmount: null,
@@ -41,9 +50,17 @@ const elements = {
  * Global state for market data
  */
 let marketData = {
+    selectedMarket: 'oct23', // 'oct23' or 'dec11'
+    oct23: {
     underlyingApy: 0,
     impliedApy: 0,
-    daysToMaturity: 0,
+        daysToMaturity: 0
+    },
+    dec11: {
+        underlyingApy: 0,
+        impliedApy: 0,
+        daysToMaturity: 0
+    },
     lastUpdated: null,
     tvlData: null,
     weightedTvl: null
@@ -58,9 +75,22 @@ function initializeApp() {
     elements.loadingDiv = document.getElementById('loading');
     elements.resultsDiv = document.getElementById('results');
     elements.errorDiv = document.getElementById('error');
-    elements.countdown = document.getElementById('countdown');
-    elements.underlyingApy = document.getElementById('underlyingApy');
-    elements.impliedApy = document.getElementById('impliedApy');
+    
+    // Get market selector buttons
+    elements.marketOct23Btn = document.getElementById('marketOct23Btn');
+    elements.marketDec11Btn = document.getElementById('marketDec11Btn');
+    
+    // Get October 23 market elements
+    elements.countdownOct23 = document.getElementById('countdownOct23');
+    elements.underlyingApyOct23 = document.getElementById('underlyingApyOct23');
+    elements.impliedApyOct23 = document.getElementById('impliedApyOct23');
+    
+    // Get December 11 market elements
+    elements.countdownDec11 = document.getElementById('countdownDec11');
+    elements.underlyingApyDec11 = document.getElementById('underlyingApyDec11');
+    elements.impliedApyDec11 = document.getElementById('impliedApyDec11');
+    
+    // Get TVL table
     elements.tvlTableBody = document.getElementById('tvlTableBody');
     
     // Get toggle elements
@@ -89,12 +119,13 @@ function initializeApp() {
 
     // Verify all elements loaded
     console.log('DOM elements loaded:', {
+        marketOct23Btn: !!elements.marketOct23Btn,
+        marketDec11Btn: !!elements.marketDec11Btn,
         tvlTableBody: !!elements.tvlTableBody,
-        underlyingApy: !!elements.underlyingApy,
-        impliedApy: !!elements.impliedApy,
-        countdown: !!elements.countdown,
-        newTradeBtn: !!elements.newTradeBtn,
-        existingYtBtn: !!elements.existingYtBtn
+        underlyingApyOct23: !!elements.underlyingApyOct23,
+        impliedApyOct23: !!elements.impliedApyOct23,
+        underlyingApyDec11: !!elements.underlyingApyDec11,
+        impliedApyDec11: !!elements.impliedApyDec11
     });
 
     // Set up event listeners
@@ -103,13 +134,17 @@ function initializeApp() {
     // Initialize market data and countdown
     initializeMarketData();
     
-    console.log('✅ Pendle Moonshot Calculator initialized');
+    console.log('✅ Pendle Moonshot Calculator initialized with dual market support');
 }
 
 /**
  * Set up event listeners
  */
 function setupEventListeners() {
+    // Market selector buttons
+    elements.marketOct23Btn.addEventListener('click', () => switchMarket('oct23'));
+    elements.marketDec11Btn.addEventListener('click', () => switchMarket('dec11'));
+    
     // Toggle buttons
     elements.newTradeBtn.addEventListener('click', () => switchToNewTrade());
     elements.existingYtBtn.addEventListener('click', () => switchToExistingYt());
@@ -144,6 +179,41 @@ function setupEventListeners() {
     elements.amountInput.addEventListener('input', validateInput);
     elements.ytAmountInput.addEventListener('input', validateInput);
     elements.ytCostInput.addEventListener('input', validateInput);
+}
+
+/**
+ * Switch between markets
+ * @param {string} market - 'oct23' or 'dec11'
+ */
+function switchMarket(market) {
+    marketData.selectedMarket = market;
+    
+    // Update button styles
+    if (market === 'oct23') {
+        elements.marketOct23Btn.classList.add('active');
+        elements.marketDec11Btn.classList.remove('active');
+        elements.marketOct23Btn.style.border = '2px solid #3b82f6';
+        elements.marketOct23Btn.style.background = 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)';
+        elements.marketOct23Btn.style.color = '#1e40af';
+        elements.marketDec11Btn.style.border = '2px solid var(--border-gray)';
+        elements.marketDec11Btn.style.background = 'white';
+        elements.marketDec11Btn.style.color = 'var(--primary-black)';
+    } else {
+        elements.marketDec11Btn.classList.add('active');
+        elements.marketOct23Btn.classList.remove('active');
+        elements.marketDec11Btn.style.border = '2px solid #10b981';
+        elements.marketDec11Btn.style.background = 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';
+        elements.marketDec11Btn.style.color = '#065f46';
+        elements.marketOct23Btn.style.border = '2px solid var(--border-gray)';
+        elements.marketOct23Btn.style.background = 'white';
+        elements.marketOct23Btn.style.color = 'var(--primary-black)';
+    }
+    
+    console.log(`Switched to ${market === 'oct23' ? 'October 23' : 'December 11'} market`);
+    
+    // Clear results when switching markets
+    hideResults();
+    hideError();
 }
 
 /**
@@ -207,8 +277,12 @@ async function performCalculation(amount) {
         hideError();
         hideResults();
 
-        // Call Pendle API
-        const apiResponse = await window.PendleAPI.calculateMoonshot(amount);
+        // Get selected market
+        const selectedMarket = marketData.selectedMarket;
+        console.log(`Calculating for ${selectedMarket === 'oct23' ? 'October 23' : 'December 11'} market`);
+
+        // Call Pendle API with selected market
+        const apiResponse = await window.PendleAPI.calculateMoonshot(amount, selectedMarket);
         
         // Format and display results
         const formattedResponse = window.PendleAPI.formatApiResponse(apiResponse);
@@ -246,12 +320,15 @@ function displayResults(results) {
     
     // Calculate and display estimated points based on YT received (netToTaker)
     const ytAmount = parseFloat(results.netToTaker.replace(/[^\d.-]/g, ''));
-    if (ytAmount > 0 && marketData.weightedTvl && marketData.daysToMaturity > 0) {
+    const selectedMarket = marketData.selectedMarket;
+    const selectedMarketData = marketData[selectedMarket];
+    
+    if (ytAmount > 0 && marketData.weightedTvl && selectedMarketData.daysToMaturity > 0) {
         try {
             const pointsBreakdown = window.PendleAPI.calculateDailyPoints(ytAmount, marketData.weightedTvl, 'yt');
-            const totalGrossPoints = pointsBreakdown.gross * marketData.daysToMaturity;
-            const totalPendleFee = pointsBreakdown.pendleFee * marketData.daysToMaturity;
-            const totalNetPoints = pointsBreakdown.net * marketData.daysToMaturity;
+            const totalGrossPoints = pointsBreakdown.gross * selectedMarketData.daysToMaturity;
+            const totalPendleFee = pointsBreakdown.pendleFee * selectedMarketData.daysToMaturity;
+            const totalNetPoints = pointsBreakdown.net * selectedMarketData.daysToMaturity;
             
             const pointsHTML = `
                 <div style="font-weight: 700;">${formatNumber(totalNetPoints)} points (NET)</div>
@@ -279,14 +356,15 @@ function displayResults(results) {
     console.log('Market data for maturity calculation:', {
         ytAmount: ytAmount,
         initialInvestment: initialInvestment,
-        underlyingApy: marketData.underlyingApy,
-        daysToMaturity: marketData.daysToMaturity
+        selectedMarket: selectedMarket,
+        underlyingApy: selectedMarketData.underlyingApy,
+        daysToMaturity: selectedMarketData.daysToMaturity
     });
     
-    if (ytAmount > 0 && marketData.underlyingApy > 0 && marketData.daysToMaturity > 0) {
+    if (ytAmount > 0 && selectedMarketData.underlyingApy > 0 && selectedMarketData.daysToMaturity > 0) {
         try {
-            const maturityReturn = window.PendleAPI.calculateMaturityApy(marketData.underlyingApy, marketData.daysToMaturity);
-            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityReturn, marketData.underlyingApy, marketData.daysToMaturity, initialInvestment);
+            const maturityReturn = window.PendleAPI.calculateMaturityApy(selectedMarketData.underlyingApy, selectedMarketData.daysToMaturity);
+            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityReturn, selectedMarketData.underlyingApy, selectedMarketData.daysToMaturity, initialInvestment);
             
             // Display ROI
             elements.resultElements.maturityApy.textContent = `${earnings.roiPercentage}%`;
@@ -309,7 +387,7 @@ function displayResults(results) {
     }
     
     // Display Almanak points scenarios based on YT amount (reuse ytAmount from above)
-    displayAlmanakScenarios(ytAmount, marketData.daysToMaturity, initialInvestment);
+    displayAlmanakScenarios(ytAmount, selectedMarketData.daysToMaturity, initialInvestment);
     
     // Show results
     showResults();
@@ -386,23 +464,42 @@ document.addEventListener('DOMContentLoaded', initializeApp);
  */
 async function initializeMarketData() {
     try {
-        // Update countdown immediately
+        // Update countdowns immediately for both markets
         updateCountdown();
         
-        // Fetch market data
-        const response = await window.PendleAPI.getMarketData();
-        if (response.success) {
-            marketData.underlyingApy = response.data.underlyingApy;
-            marketData.impliedApy = response.data.impliedApy;
-            marketData.lastUpdated = new Date();
+        // Fetch market data for BOTH markets
+        const marketsData = await window.PendleAPI.getAllMarketsData();
+        
+        if (marketsData.success) {
+            // Update October 23 market data
+            if (marketsData.oct23) {
+                marketData.oct23.underlyingApy = marketsData.oct23.underlyingApy;
+                marketData.oct23.impliedApy = marketsData.oct23.impliedApy;
+                marketData.oct23.daysToMaturity = window.PendleAPI.getDaysToMaturity('oct23');
+                
+                elements.underlyingApyOct23.textContent = `${(marketsData.oct23.underlyingApy * 100).toFixed(2)}%`;
+                elements.impliedApyOct23.textContent = `${(marketsData.oct23.impliedApy * 100).toFixed(2)}%`;
+                console.log('✅ October 23 market data loaded');
+            }
             
-            // Update UI
-            elements.underlyingApy.textContent = `${(response.data.underlyingApy * 100).toFixed(2)}%`;
-            elements.impliedApy.textContent = `${(response.data.impliedApy * 100).toFixed(2)}%`;
+            // Update December 11 market data
+            if (marketsData.dec11) {
+                marketData.dec11.underlyingApy = marketsData.dec11.underlyingApy;
+                marketData.dec11.impliedApy = marketsData.dec11.impliedApy;
+                marketData.dec11.daysToMaturity = window.PendleAPI.getDaysToMaturity('dec11');
+                
+                elements.underlyingApyDec11.textContent = `${(marketsData.dec11.underlyingApy * 100).toFixed(2)}%`;
+                elements.impliedApyDec11.textContent = `${(marketsData.dec11.impliedApy * 100).toFixed(2)}%`;
+                console.log('✅ December 11 market data loaded');
+            }
+            
+            marketData.lastUpdated = new Date();
         } else {
-            elements.underlyingApy.textContent = 'Error loading';
-            elements.impliedApy.textContent = 'Error loading';
-            console.error('Failed to load market data:', response.error);
+            elements.underlyingApyOct23.textContent = 'Error loading';
+            elements.impliedApyOct23.textContent = 'Error loading';
+            elements.underlyingApyDec11.textContent = 'Error loading';
+            elements.impliedApyDec11.textContent = 'Error loading';
+            console.error('Failed to load market data:', marketsData.error);
         }
         
         // Fetch TVL data for points calculation
@@ -419,42 +516,66 @@ async function initializeMarketData() {
         
     } catch (error) {
         console.error('Failed to initialize market data:', error);
-        elements.underlyingApy.textContent = 'Error loading';
-        elements.countdown.textContent = 'Error loading';
+        elements.underlyingApyOct23.textContent = 'Error loading';
+        elements.underlyingApyDec11.textContent = 'Error loading';
     }
 }
 
 /**
- * Update countdown display
+ * Update countdown display for both markets
  */
 function updateCountdown() {
-    const daysToMaturity = window.PendleAPI.getDaysToMaturity();
-    marketData.daysToMaturity = daysToMaturity;
+    // Update October 23 countdown
+    const daysToMaturityOct23 = window.PendleAPI.getDaysToMaturity('oct23');
+    marketData.oct23.daysToMaturity = daysToMaturityOct23;
     
-    if (daysToMaturity > 0) {
-        const dayText = daysToMaturity === 1 ? 'day' : 'days';
-        elements.countdown.textContent = `${daysToMaturity} ${dayText}`;
+    if (daysToMaturityOct23 > 0) {
+        const dayTextOct23 = daysToMaturityOct23 === 1 ? 'day' : 'days';
+        elements.countdownOct23.textContent = `${daysToMaturityOct23} ${dayTextOct23}`;
     } else {
-        elements.countdown.textContent = 'Matured';
+        elements.countdownOct23.textContent = 'Matured';
+    }
+    
+    // Update December 11 countdown
+    const daysToMaturityDec11 = window.PendleAPI.getDaysToMaturity('dec11');
+    marketData.dec11.daysToMaturity = daysToMaturityDec11;
+    
+    if (daysToMaturityDec11 > 0) {
+        const dayTextDec11 = daysToMaturityDec11 === 1 ? 'day' : 'days';
+        elements.countdownDec11.textContent = `${daysToMaturityDec11} ${dayTextDec11}`;
+    } else {
+        elements.countdownDec11.textContent = 'Matured';
     }
 }
 
 /**
- * Refresh market data
+ * Refresh market data for both markets
  */
 async function refreshMarketData() {
     try {
-        const response = await window.PendleAPI.getMarketData();
-        if (response.success) {
-            marketData.underlyingApy = response.data.underlyingApy;
-            marketData.impliedApy = response.data.impliedApy;
+        const marketsData = await window.PendleAPI.getAllMarketsData();
+        
+        if (marketsData.success) {
+            // Update October 23 market
+            if (marketsData.oct23) {
+                marketData.oct23.underlyingApy = marketsData.oct23.underlyingApy;
+                marketData.oct23.impliedApy = marketsData.oct23.impliedApy;
+                
+                elements.underlyingApyOct23.textContent = `${(marketsData.oct23.underlyingApy * 100).toFixed(2)}%`;
+                elements.impliedApyOct23.textContent = `${(marketsData.oct23.impliedApy * 100).toFixed(2)}%`;
+            }
+            
+            // Update December 11 market
+            if (marketsData.dec11) {
+                marketData.dec11.underlyingApy = marketsData.dec11.underlyingApy;
+                marketData.dec11.impliedApy = marketsData.dec11.impliedApy;
+                
+                elements.underlyingApyDec11.textContent = `${(marketsData.dec11.underlyingApy * 100).toFixed(2)}%`;
+                elements.impliedApyDec11.textContent = `${(marketsData.dec11.impliedApy * 100).toFixed(2)}%`;
+            }
+            
             marketData.lastUpdated = new Date();
-            
-            // Update UI
-            elements.underlyingApy.textContent = `${(response.data.underlyingApy * 100).toFixed(2)}%`;
-            elements.impliedApy.textContent = `${(response.data.impliedApy * 100).toFixed(2)}%`;
-            
-            console.log('Market data refreshed:', response.data);
+            console.log('Both markets data refreshed');
         }
     } catch (error) {
         console.error('Failed to refresh market data:', error);
@@ -525,19 +646,35 @@ function displayTvlBreakdown() {
     const totalWeighted = weighted.totalWeightedTvl;
     const DAILY_POINTS = 316666; // Daily points distributed (95% of 333,333, 5% for referrals)
     
-    // Calculate points share percentages and daily points
+    // Get live prices from config (updated in fetchTvlData)
+    const liveAlUsdPrice = tvlData.liveAlUsdPrice || window.PendleAPI.ALMANAK_POINTS_CONFIG.alUsdPrice;
+    const liveAlpUsdPrice = tvlData.liveAlpUsdPrice || window.PendleAPI.ALMANAK_POINTS_CONFIG.alpUsdPrice;
+    
+    // Calculate points for October 23 market
+    const ytShareOct23 = (weighted.oct23.weightedYt / totalWeighted) * 100;
+    const lpShareOct23 = (weighted.oct23.weightedLp / totalWeighted) * 100;
+    const ytDailyPointsOct23 = (weighted.oct23.weightedYt / totalWeighted) * DAILY_POINTS;
+    const lpDailyPointsOct23 = (weighted.oct23.weightedLp / totalWeighted) * DAILY_POINTS;
+    
+    // Calculate points for December 11 market
+    const ytShareDec11 = (weighted.dec11.weightedYt / totalWeighted) * 100;
+    const lpShareDec11 = (weighted.dec11.weightedLp / totalWeighted) * 100;
+    const ytDailyPointsDec11 = (weighted.dec11.weightedYt / totalWeighted) * DAILY_POINTS;
+    const lpDailyPointsDec11 = (weighted.dec11.weightedLp / totalWeighted) * DAILY_POINTS;
+    
+    // Calculate combined points (for totals)
     const ytShare = (weighted.weightedYt / totalWeighted) * 100;
     const lpShare = (weighted.weightedLp / totalWeighted) * 100;
     const curveShare = (weighted.weightedCurve / totalWeighted) * 100;
     const otherShare = (weighted.weightedOther / totalWeighted) * 100;
     
-    const ytDailyPoints = (weighted.weightedYt / totalWeighted) * DAILY_POINTS;
-    const lpDailyPoints = (weighted.weightedLp / totalWeighted) * DAILY_POINTS;
+    const ytDailyPoints = ytDailyPointsOct23 + ytDailyPointsDec11;
+    const lpDailyPoints = lpDailyPointsOct23 + lpDailyPointsDec11;
     const curveDailyPoints = (weighted.weightedCurve / totalWeighted) * DAILY_POINTS;
     const otherDailyPoints = (weighted.weightedOther / totalWeighted) * DAILY_POINTS;
     const referralDailyPoints = 16667; // 5% reserved for referral program
     
-    // Calculate Pendle fees (5% from YT points only)
+    // Calculate Pendle fees (5% from YT points only - applies to BOTH markets)
     const ytPendleFee = ytDailyPoints * 0.05;
     const ytNetPoints = ytDailyPoints * 0.95;
     
@@ -549,20 +686,20 @@ function displayTvlBreakdown() {
             </td>
         </tr>
         <tr style="background-color: #f8fafc;">
-            <td colspan="2"><span class="tvl-type">alUSD Supply (${formatNumber(tvlData.alUsdSupply)} × $1.0243)</span></td>
-            <td colspan="4"><strong>${formatCurrency(tvlData.alUsdSupply * 1.0243)}</strong></td>
+            <td colspan="2"><span class="tvl-type">alUSD Supply (${formatNumber(tvlData.alUsdSupply)} × $${liveAlUsdPrice.toFixed(6)})</span></td>
+            <td colspan="4"><strong>${formatCurrency(tvlData.alUsdSupply * liveAlUsdPrice)}</strong></td>
         </tr>
         <tr style="background-color: #ffffff;">
-            <td colspan="2"><span class="tvl-type">alpUSD Supply (${formatNumber(tvlData.alpUsdSupply)} × $1.01)</span></td>
-            <td colspan="4"><strong>${formatCurrency(tvlData.alpUsdSupply * 1.01)}</strong></td>
+            <td colspan="2"><span class="tvl-type">alpUSD Supply (${formatNumber(tvlData.alpUsdSupply)} × $${liveAlpUsdPrice.toFixed(6)})</span></td>
+            <td colspan="4"><strong>${formatCurrency(tvlData.alpUsdSupply * liveAlpUsdPrice)}</strong></td>
         </tr>
         <tr style="background-color: #e0f2fe; font-weight: 600;">
             <td colspan="2"><strong>GROSS TVL</strong></td>
             <td colspan="4"><strong>${formatCurrency(tvlData.grossTvl || tvlData.defiLlamaTvl)}</strong></td>
         </tr>
         <tr style="background-color: #fee2e2;">
-            <td colspan="2"><span class="tvl-type" style="color: #991b1b;">Minus: SY alUSD (${formatNumber(tvlData.syAlUsdBalance)} × $1.0243)</span></td>
-            <td colspan="4"><strong style="color: #991b1b;">-${formatCurrency(tvlData.syAlUsdBalance * 1.0243)}</strong></td>
+            <td colspan="2"><span class="tvl-type" style="color: #991b1b;">Minus: SY alUSD (${formatNumber(tvlData.syAlUsdBalance)} × $${liveAlUsdPrice.toFixed(6)})</span></td>
+            <td colspan="4"><strong style="color: #991b1b;">-${formatCurrency(tvlData.syAlUsdBalance * liveAlUsdPrice)}</strong></td>
         </tr>
         <tr style="background-color: #dbeafe; font-weight: 600; border-bottom: 3px solid #0284c7;">
             <td colspan="2"><strong>NET TVL (for points)</strong></td>
@@ -572,11 +709,80 @@ function displayTvlBreakdown() {
         <!-- Points Distribution Section -->
         <tr style="background-color: #f0f9ff; border-bottom: 2px solid #0284c7;">
             <td colspan="6" style="padding: 12px 16px; padding-top: 20px;">
-                <strong style="font-size: 1.05rem;">🎯 Points Distribution Breakdown</strong>
+                <strong style="font-size: 1.05rem;">🎯 Pendle Markets Points Distribution</strong>
             </td>
         </tr>
-        <tr>
-            <td><span class="tvl-type">YT (Yield Tokens)</span><span class="tvl-boost boost-5x">5x Boost</span></td>
+        
+        <!-- October 23 Market -->
+        <tr style="background-color: #eff6ff; border-top: 2px solid #3b82f6;">
+            <td colspan="6" style="padding: 10px 16px;">
+                <strong style="font-size: 0.95rem; color: #1e40af;">📅 October 23, 2025 Market</strong>
+            </td>
+        </tr>
+        <tr style="background-color: #f9fafb;">
+            <td><span class="tvl-type">YT Oct 23</span><span class="tvl-boost boost-5x">5x Boost</span></td>
+            <td>${formatCurrency(weighted.oct23.ytTvl)}</td>
+            <td>5x</td>
+            <td>${formatCurrency(weighted.oct23.weightedYt)}</td>
+            <td><strong>${formatNumber(ytDailyPointsOct23)}</strong> <span style="font-size: 0.8em; color: #6c757d;">(gross)</span></td>
+            <td>${ytShareOct23.toFixed(2)}%</td>
+        </tr>
+        <tr style="background-color: #ffffff;">
+            <td><span class="tvl-type">LP Oct 23</span><span class="tvl-boost boost-1-25x">1.25x Boost</span></td>
+            <td>${formatCurrency(weighted.oct23.lpTvl)}</td>
+            <td>1.25x</td>
+            <td>${formatCurrency(weighted.oct23.weightedLp)}</td>
+            <td><strong>${formatNumber(lpDailyPointsOct23)}</strong></td>
+            <td>${lpShareOct23.toFixed(2)}%</td>
+        </tr>
+        <tr style="opacity: 0.6; background-color: #fee2e2;">
+            <td><span class="tvl-type">PT Oct 23</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
+            <td><strong>${formatCurrency(weighted.oct23.ptTvl || 0)}</strong></td>
+            <td style="color: #991b1b;"><strong>0x</strong></td>
+            <td style="color: #991b1b;"><strong>${formatCurrency(0)}</strong></td>
+            <td style="color: #991b1b;"><strong>0</strong></td>
+            <td style="color: #991b1b;"><strong>0%</strong></td>
+        </tr>
+        
+        <!-- December 11 Market -->
+        <tr style="background-color: #f0fdf4; border-top: 2px solid #10b981;">
+            <td colspan="6" style="padding: 10px 16px;">
+                <strong style="font-size: 0.95rem; color: #065f46;">📅 December 11, 2025 Market</strong>
+            </td>
+        </tr>
+        <tr style="background-color: #f9fafb;">
+            <td><span class="tvl-type">YT Dec 11</span><span class="tvl-boost boost-5x">5x Boost</span></td>
+            <td>${formatCurrency(weighted.dec11.ytTvl)}</td>
+            <td>5x</td>
+            <td>${formatCurrency(weighted.dec11.weightedYt)}</td>
+            <td><strong>${formatNumber(ytDailyPointsDec11)}</strong> <span style="font-size: 0.8em; color: #6c757d;">(gross)</span></td>
+            <td>${ytShareDec11.toFixed(2)}%</td>
+        </tr>
+        <tr style="background-color: #ffffff;">
+            <td><span class="tvl-type">LP Dec 11</span><span class="tvl-boost boost-1-25x">1.25x Boost</span></td>
+            <td>${formatCurrency(weighted.dec11.lpTvl)}</td>
+            <td>1.25x</td>
+            <td>${formatCurrency(weighted.dec11.weightedLp)}</td>
+            <td><strong>${formatNumber(lpDailyPointsDec11)}</strong></td>
+            <td>${lpShareDec11.toFixed(2)}%</td>
+        </tr>
+        <tr style="opacity: 0.6; background-color: #fee2e2;">
+            <td><span class="tvl-type">PT Dec 11</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
+            <td><strong>${formatCurrency(weighted.dec11.ptTvl || 0)}</strong></td>
+            <td style="color: #991b1b;"><strong>0x</strong></td>
+            <td style="color: #991b1b;"><strong>${formatCurrency(0)}</strong></td>
+            <td style="color: #991b1b;"><strong>0</strong></td>
+            <td style="color: #991b1b;"><strong>0%</strong></td>
+        </tr>
+        
+        <!-- Combined YT Summary -->
+        <tr style="background-color: #fef3c7; border-top: 2px solid #f59e0b;">
+            <td colspan="6" style="padding: 10px 16px;">
+                <strong style="font-size: 0.9rem; color: #92400e;">📊 Combined YT Summary</strong>
+            </td>
+        </tr>
+        <tr style="background-color: #fffbeb;">
+            <td style="padding-left: 20px;"><span class="tvl-type">Total YT (Both Markets)</span></td>
             <td>${formatCurrency(weighted.ytTvl)}</td>
             <td>5x</td>
             <td>${formatCurrency(weighted.weightedYt)}</td>
@@ -584,7 +790,7 @@ function displayTvlBreakdown() {
             <td>${ytShare.toFixed(2)}%</td>
         </tr>
         <tr style="background-color: #fee2e2;">
-            <td style="padding-left: 30px;"><span class="tvl-type" style="color: #991b1b;">├─ Pendle Fee (5% from YT)</span></td>
+            <td style="padding-left: 30px;"><span class="tvl-type" style="color: #991b1b;">├─ Pendle Fee (5%)</span></td>
             <td style="color: #991b1b;">-</td>
             <td style="color: #991b1b;">-</td>
             <td style="color: #991b1b;">-</td>
@@ -599,13 +805,20 @@ function displayTvlBreakdown() {
             <td style="color: #166534;"><strong>${formatNumber(ytNetPoints)}</strong> <span style="font-size: 0.8em;">(net)</span></td>
             <td style="color: #166534;">${((ytNetPoints / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
         </tr>
-        <tr>
-            <td><span class="tvl-type">LP (Liquidity)</span><span class="tvl-boost boost-1-25x">1.25x Boost</span></td>
+        <tr style="background-color: #fffbeb;">
+            <td style="padding-left: 20px;"><span class="tvl-type">Total LP (Both Markets)</span></td>
             <td>${formatCurrency(weighted.lpTvl)}</td>
             <td>1.25x</td>
             <td>${formatCurrency(weighted.weightedLp)}</td>
             <td><strong>${formatNumber(lpDailyPoints)}</strong></td>
             <td>${lpShare.toFixed(2)}%</td>
+        </tr>
+        
+        <!-- Shared Categories -->
+        <tr style="background-color: #f3f4f6; border-top: 2px solid #6b7280;">
+            <td colspan="6" style="padding: 10px 16px;">
+                <strong style="font-size: 0.9rem; color: #374151;">🌐 Shared Categories</strong>
+            </td>
         </tr>
         <tr>
             <td><span class="tvl-type">Curve Pool</span><span class="tvl-boost" style="background-color: #fef3c7; color: #92400e;">3x Boost</span></td>
@@ -721,18 +934,22 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity, initialInvestment = n
     }
     
     try {
+        // Get selected market data
+        const selectedMarket = marketData.selectedMarket;
+        const selectedMarketData = marketData[selectedMarket];
+        
         const scenarios = window.PendleAPI.calculateAlmanakPointsEarnings(
             ytAmount, 
             daysToMaturity, 
             marketData.weightedTvl,
-            marketData.underlyingApy,
+            selectedMarketData.underlyingApy,
             initialInvestment
         );
         
         // Calculate breakeven FDV (using NET points after Pendle fee)
         const pointsBreakdown = window.PendleAPI.calculateDailyPoints(ytAmount, marketData.weightedTvl, 'yt');
         const totalNetPoints = pointsBreakdown.net * daysToMaturity;
-        const dailyUnderlyingYield = ytAmount * (marketData.underlyingApy / 365);
+        const dailyUnderlyingYield = ytAmount * (selectedMarketData.underlyingApy / 365);
         const totalUnderlyingYield = dailyUnderlyingYield * daysToMaturity;
         
         // FDV where Total Earnings = Initial Investment
@@ -905,8 +1122,12 @@ async function handleCalculateExisting() {
         return;
     }
     
+    // Get selected market data
+    const selectedMarket = marketData.selectedMarket;
+    const selectedMarketData = marketData[selectedMarket];
+    
     // Check if market data is loaded
-    if (!marketData.weightedTvl || marketData.daysToMaturity <= 0) {
+    if (!marketData.weightedTvl || selectedMarketData.daysToMaturity <= 0) {
         showError('Market data not loaded yet. Please wait a moment and try again.');
         return;
     }
@@ -940,13 +1161,17 @@ function displayExistingYtResults(ytAmount, ytCost) {
         tradeSection.style.display = 'none';
     }
     
+    // Get selected market data
+    const selectedMarket = marketData.selectedMarket;
+    const selectedMarketData = marketData[selectedMarket];
+    
     // Calculate and display estimated points
-    if (ytAmount > 0 && marketData.weightedTvl && marketData.daysToMaturity > 0) {
+    if (ytAmount > 0 && marketData.weightedTvl && selectedMarketData.daysToMaturity > 0) {
         try {
             const pointsBreakdown = window.PendleAPI.calculateDailyPoints(ytAmount, marketData.weightedTvl, 'yt');
-            const totalGrossPoints = pointsBreakdown.gross * marketData.daysToMaturity;
-            const totalPendleFee = pointsBreakdown.pendleFee * marketData.daysToMaturity;
-            const totalNetPoints = pointsBreakdown.net * marketData.daysToMaturity;
+            const totalGrossPoints = pointsBreakdown.gross * selectedMarketData.daysToMaturity;
+            const totalPendleFee = pointsBreakdown.pendleFee * selectedMarketData.daysToMaturity;
+            const totalNetPoints = pointsBreakdown.net * selectedMarketData.daysToMaturity;
             
             const pointsHTML = `
                 <div style="font-weight: 700;">${formatNumber(totalNetPoints)} points (NET)</div>
@@ -965,10 +1190,10 @@ function displayExistingYtResults(ytAmount, ytCost) {
     }
     
     // Calculate maturity earnings based on YT amount
-    if (ytAmount > 0 && marketData.underlyingApy > 0 && marketData.daysToMaturity > 0) {
+    if (ytAmount > 0 && selectedMarketData.underlyingApy > 0 && selectedMarketData.daysToMaturity > 0) {
         try {
-            const maturityReturn = window.PendleAPI.calculateMaturityApy(marketData.underlyingApy, marketData.daysToMaturity);
-            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityReturn, marketData.underlyingApy, marketData.daysToMaturity, ytCost);
+            const maturityReturn = window.PendleAPI.calculateMaturityApy(selectedMarketData.underlyingApy, selectedMarketData.daysToMaturity);
+            const earnings = window.PendleAPI.calculateMaturityEarnings(ytAmount, maturityReturn, selectedMarketData.underlyingApy, selectedMarketData.daysToMaturity, ytCost);
             
             // Display ROI
             elements.resultElements.maturityApy.textContent = `${earnings.roiPercentage}%`;
@@ -987,7 +1212,7 @@ function displayExistingYtResults(ytAmount, ytCost) {
     }
     
     // Display Almanak points scenarios (pass ytCost as initialInvestment)
-    displayAlmanakScenarios(ytAmount, marketData.daysToMaturity, ytCost);
+    displayAlmanakScenarios(ytAmount, selectedMarketData.daysToMaturity, ytCost);
     
     // Show results
     showResults();
@@ -995,7 +1220,8 @@ function displayExistingYtResults(ytAmount, ytCost) {
     console.log('Existing YT Holder Results:', {
         ytAmount,
         ytCost,
-        daysToMaturity: marketData.daysToMaturity
+        selectedMarket: marketData.selectedMarket,
+        daysToMaturity: selectedMarketData.daysToMaturity
     });
 }
 

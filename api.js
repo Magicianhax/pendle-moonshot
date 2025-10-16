@@ -1,16 +1,36 @@
 // Pendle API Integration Module
 
 /**
- * Configuration for Pendle API
+ * Configuration for Pendle API - Multiple Markets Support
  */
 const PENDLE_CONFIG = {
     API_URL: "https://api-v2.pendle.finance/limit-order/v2/limit-order/market-order",
     MARKET_API_URL: "https://api-v2.pendle.finance/core/v2/1/markets",
     CHAIN_ID: 1,
-    MARKET: "0x79f06a8dc564717a9ad418049d0be9a60f2646c0",
-    CAPPED_AMOUNT: "138107596043615446631225",
     TYPE: 2,
-    MATURITY_DATE: "2025-10-23T00:00:00.000Z"
+    
+    // October 23, 2025 Market
+    MARKET_OCT23: {
+        address: "0x79f06a8dc564717a9ad418049d0be9a60f2646c0",
+        cappedAmount: "138107596043615446631225",
+        maturityDate: "2025-10-23T00:00:00.000Z",
+        name: "October 23, 2025",
+        ytToken: "0xd7c3fc198Bd7A50B99629cfe302006E9224f087b"
+    },
+    
+    // December 11, 2025 Market
+    MARKET_DEC11: {
+        address: "0x233062c1de76a38a4f41ab7c32e7bdb80a1dfc02",
+        cappedAmount: "138107596043615446631225", // Using same capped amount, adjust if needed
+        maturityDate: "2025-12-11T00:00:00.000Z",
+        name: "December 11, 2025",
+        ytToken: "0xBA31C7c0189E9B6ab6CF6b27CD3D1A4D6d3d0Fd6"
+    },
+    
+    // Default market for backward compatibility
+    get MARKET() { return this.MARKET_OCT23.address; },
+    get CAPPED_AMOUNT() { return this.MARKET_OCT23.cappedAmount; },
+    get MATURITY_DATE() { return this.MARKET_OCT23.maturityDate; }
 };
 
 /**
@@ -47,9 +67,10 @@ function formatFromWei(weiAmount, decimals = 18) {
 /**
  * Calculate moonshot potential using Pendle API
  * @param {number|string} amount - Amount in alUSD
+ * @param {string} marketKey - Market key ('oct23' or 'dec11'), defaults to 'oct23'
  * @returns {Promise<Object>} API response with trade data
  */
-async function calculateMoonshot(amount) {
+async function calculateMoonshot(amount, marketKey = 'oct23') {
     try {
         // Validate input
         if (!amount || amount <= 0) {
@@ -65,10 +86,14 @@ async function calculateMoonshot(amount) {
         // Convert amount to wei
         const netFromTakerWei = toWei(amount);
         
+        // Get market configuration based on selected market
+        const marketConfig = marketKey === 'dec11' ? PENDLE_CONFIG.MARKET_DEC11 : PENDLE_CONFIG.MARKET_OCT23;
+        
         // Debug logging for large amounts
         if (numAmount >= 1000) {
             console.log('Large amount conversion:', {
                 input: amount,
+                market: marketConfig.name,
                 wei: netFromTakerWei,
                 weiLength: netFromTakerWei.length
             });
@@ -77,10 +102,10 @@ async function calculateMoonshot(amount) {
         // Prepare API request payload
         const payload = {
             chainId: PENDLE_CONFIG.CHAIN_ID,
-            market: PENDLE_CONFIG.MARKET,
+            market: marketConfig.address,
             netFromTaker: netFromTakerWei,
             type: PENDLE_CONFIG.TYPE,
-            cappedAmountToMarket: PENDLE_CONFIG.CAPPED_AMOUNT
+            cappedAmountToMarket: marketConfig.cappedAmount
         };
 
         // Make API call
@@ -160,11 +185,12 @@ function formatApiResponse(apiResponse) {
 
 /**
  * Get market data including APY and maturity information
+ * @param {string} marketAddress - Market address (defaults to October 23 market)
  * @returns {Promise<Object>} Market data response
  */
-async function getMarketData() {
+async function getMarketData(marketAddress = PENDLE_CONFIG.MARKET_OCT23.address) {
     try {
-        const response = await fetch(`${PENDLE_CONFIG.MARKET_API_URL}/${PENDLE_CONFIG.MARKET}/data`, {
+        const response = await fetch(`${PENDLE_CONFIG.MARKET_API_URL}/${marketAddress}/data`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json"
@@ -203,15 +229,46 @@ async function getMarketData() {
 }
 
 /**
+ * Get market data for all markets
+ * @returns {Promise<Object>} Market data for both markets
+ */
+async function getAllMarketsData() {
+    try {
+        const [oct23Data, dec11Data] = await Promise.all([
+            getMarketData(PENDLE_CONFIG.MARKET_OCT23.address),
+            getMarketData(PENDLE_CONFIG.MARKET_DEC11.address)
+        ]);
+        
+        return {
+            success: true,
+            oct23: oct23Data.success ? oct23Data.data : null,
+            dec11: dec11Data.success ? dec11Data.data : null
+        };
+    } catch (error) {
+        console.error('Failed to fetch all markets data:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
  * Calculate days remaining until maturity using UTC time
+ * @param {string} marketKey - Market key ('oct23' or 'dec11'), defaults to 'oct23'
  * @returns {number} Days remaining
  */
-function getDaysToMaturity() {
+function getDaysToMaturity(marketKey = 'oct23') {
     // Get current UTC date
     const now = new Date();
     
+    // Get maturity date for the specified market
+    const maturityDateString = marketKey === 'dec11' 
+        ? PENDLE_CONFIG.MARKET_DEC11.maturityDate 
+        : PENDLE_CONFIG.MARKET_OCT23.maturityDate;
+    
     // Parse maturity date (already in UTC)
-    const maturityDate = new Date(PENDLE_CONFIG.MATURITY_DATE);
+    const maturityDate = new Date(maturityDateString);
     
     // Get UTC dates at start of day
     const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -298,16 +355,26 @@ const ALMANAK_POINTS_CONFIG = {
     usdtAddress: "0x70684224814a75e1b4b45de162f2456db4d66510",
     usdcToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     usdtToken: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-    ytToken: "0xd7c3fc198Bd7A50B99629cfe302006E9224f087b", // YT-alUSD token contract
+    // Pendle YT tokens for both markets
+    ytTokenOct23: "0xd7c3fc198Bd7A50B99629cfe302006E9224f087b", // YT-alUSD October 23 token
+    ytTokenDec11: "0xBA31C7c0189E9B6ab6CF6b27CD3D1A4D6d3d0Fd6", // YT-alUSD December 11 token
     // Curve pool tracking
     curvePoolAddress: "0x463626cF9028d96eAd5084954FF634f813D5fFB9", // Curve pool address for balance tracking (gets 3x points)
     alUsdToken: "0xDCD0f5ab30856F28385F641580Bbd85f88349124", // alUSD token contract for tracking
     alpUsdToken: "0x5a97b0b97197299456af841f8605543b13b12ee3", // alpUSD token contract
     syContractAddress: "0x8e5e017d6b3F567623B5d4a690a2a686bF7BA515", // SY contract where alUSD is deposited (to subtract from TVL)
-    alUsdPrice: 1.0243, // alUSD ≈ $1.0243
-    alpUsdPrice: 1.01, // alpUSD ≈ $1.01
+    lagoonAlUsdApiUrl: "https://app.lagoon.finance/api/vaults?chainId=1&vault=0xDCD0f5ab30856F28385F641580Bbd85f88349124", // Lagoon Finance API for live alUSD price
+    lagoonAlpUsdApiUrl: "https://app.lagoon.finance/api/vaults?chainId=1&vault=0x5a97B0B97197299456Af841F8605543b13b12eE3", // Lagoon Finance API for live alpUSD price
+    alUsdPrice: 1.0243, // alUSD price - will be updated with live price from Lagoon API
+    alpUsdPrice: 1.01, // alpUSD price - will be updated with live price from Lagoon API
     usdcPrice: 1.00 // USDC = $1.00
 };
+
+/**
+ * Note: Live alUSD and alpUSD prices are fetched by the serverless function
+ * to avoid CORS issues. The prices are returned as part of the TVL data.
+ * The serverless function handles both Lagoon Finance API calls.
+ */
 
 /**
  * Fetch TVL data from backend API
@@ -315,92 +382,125 @@ const ALMANAK_POINTS_CONFIG = {
  */
 async function fetchTvlData() {
     try {
-        const results = {
-            alUsdSupply: 0,
-            alpUsdSupply: 0,
-            syAlUsdBalance: 0, // alUSD locked in SY contract (to subtract from TVL)
-            defiLlamaTvl: 0, // Now calculated from alUSD + alpUSD supplies - SY balance
-            usdcBalance: 0,
-            usdtBalance: 0,
-            curveTvl: 0, // Curve pool TVL with 3x boost
-            pendleLpTvl: 0,
-            pendleYtTvl: 0,
-            pendlePtTvl: 0, // PT TVL - excluded from points
-            otherTvl: 0,
-            totalTvl: 0
-        };
+        // Note: Live prices are fetched by the serverless function to avoid CORS
+        console.log('📊 Fetching TVL data from serverless function...');
         
-        // Fetch data from backend API
+        // Fetch data from backend API FIRST to get live prices
         console.log('🚀 Fetching TVL data from backend API...');
         const backendResponse = await fetch('/.netlify/functions/get-tvl-data');
         const backendData = await backendResponse.json();
         
-        if (backendData.success && backendData.data) {
-            console.log('✅ Backend API response:', backendData.data);
-            
-            // Extract data from backend
-            const alUsdSupply = backendData.data.alUsdSupply || 0;
-            const alpUsdSupply = backendData.data.alpUsdSupply || 0;
-            const syAlUsdBalance = backendData.data.syAlUsdBalance || 0;
-            const ytTotalSupply = backendData.data.ytTotalSupply || 0;
-            
-            // Store supplies and SY balance
-            results.alUsdSupply = alUsdSupply;
-            results.alpUsdSupply = alpUsdSupply;
-            results.syAlUsdBalance = syAlUsdBalance;
-            
-            // Store Curve TVL from backend
-            results.curveTvl = backendData.data.curveTvl || 0;
-            console.log('✅ YT Supply from backend:', ytTotalSupply);
-        } else {
+        if (!backendData.success || !backendData.data) {
             console.error('❌ Backend API returned error:', backendData.error);
             throw new Error(backendData.error || 'Backend API failed');
         }
         
-        // Calculate gross TVL from token supplies (before SY subtraction)
-        // Formula: (alUSD supply × $1.0243) + (alpUSD supply × $1.01)
-        const alUsdSupply = results.alUsdSupply;
-        const alpUsdSupply = results.alpUsdSupply;
-        const syAlUsdBalance = results.syAlUsdBalance;
-        const ytTotalSupply = backendData.data.ytTotalSupply || 0;
+        console.log('✅ Backend API response:', backendData.data);
         
-        results.defiLlamaTvl = (alUsdSupply * ALMANAK_POINTS_CONFIG.alUsdPrice) + 
-                               (alpUsdSupply * ALMANAK_POINTS_CONFIG.alpUsdPrice);
+        // Extract live prices from backend response and update config
+        const liveAlUsdPrice = backendData.data.liveAlUsdPrice || ALMANAK_POINTS_CONFIG.alUsdPrice;
+        const liveAlpUsdPrice = backendData.data.liveAlpUsdPrice || ALMANAK_POINTS_CONFIG.alpUsdPrice;
+        
+        // Update the config with live prices
+        ALMANAK_POINTS_CONFIG.alUsdPrice = liveAlUsdPrice;
+        ALMANAK_POINTS_CONFIG.alpUsdPrice = liveAlpUsdPrice;
+        
+        console.log('✅ Using live alUSD price:', liveAlUsdPrice);
+        console.log('✅ Using live alpUSD price:', liveAlpUsdPrice);
+        
+        // Extract data from backend
+        const alUsdSupply = backendData.data.alUsdSupply || 0;
+        const alpUsdSupply = backendData.data.alpUsdSupply || 0;
+        const syAlUsdBalance = backendData.data.syAlUsdBalance || 0;
+        const ytTotalSupplyOct23 = backendData.data.ytTotalSupplyOct23 || 0;
+        const ytTotalSupplyDec11 = backendData.data.ytTotalSupplyDec11 || 0;
+        const curveTvl = backendData.data.curveTvl || 0;
+        
+        console.log('✅ YT Supply (Oct 23) from backend:', ytTotalSupplyOct23);
+        console.log('✅ YT Supply (Dec 11) from backend:', ytTotalSupplyDec11);
+        
+        // Now create results object with all the data
+        const results = {
+            alUsdSupply: alUsdSupply,
+            alpUsdSupply: alpUsdSupply,
+            syAlUsdBalance: syAlUsdBalance,
+            defiLlamaTvl: 0, // Will be calculated below
+            usdcBalance: 0,
+            usdtBalance: 0,
+            curveTvl: curveTvl,
+            // Separate data for each market
+            pendleOct23: {
+                lpTvl: 0,
+                ytTvl: 0,
+                ptTvl: 0
+            },
+            pendleDec11: {
+                lpTvl: 0,
+                ytTvl: 0,
+                ptTvl: 0
+            },
+            // Legacy fields (sum of both markets for backward compatibility)
+            pendleLpTvl: 0,
+            pendleYtTvl: 0,
+            pendlePtTvl: 0,
+            otherTvl: 0,
+            totalTvl: 0,
+            liveAlUsdPrice: liveAlUsdPrice,
+            liveAlpUsdPrice: liveAlpUsdPrice
+        };
+        
+        // Calculate gross TVL from token supplies (before SY subtraction)
+        // Formula: (alUSD supply × live alUSD price) + (alpUSD supply × live alpUSD price)
+        results.defiLlamaTvl = (alUsdSupply * liveAlUsdPrice) + 
+                               (alpUsdSupply * liveAlpUsdPrice);
         
         // Store gross TVL before SY subtraction
         results.grossTvl = results.defiLlamaTvl;
         
-        // Get Pendle market data for LP and PT TVL
+        // Get Pendle market data for BOTH markets
         try {
-            const marketResponse = await getMarketData();
-            if (marketResponse.success && marketResponse.data.liquidity) {
-                const totalPt = marketResponse.data.totalPt || 0;
-                const ptPrice = marketResponse.data.assetPriceUsd || ALMANAK_POINTS_CONFIG.alUsdPrice; // PT price from API
+            // Fetch October 23 market data
+            const marketResponseOct23 = await getMarketData(PENDLE_CONFIG.MARKET_OCT23.address);
+            if (marketResponseOct23.success && marketResponseOct23.data.liquidity) {
+                const totalPtOct23 = marketResponseOct23.data.totalPt || 0;
+                const ptPriceOct23 = marketResponseOct23.data.assetPriceUsd || liveAlUsdPrice;
                 
-                // LP TVL from Pendle market
-                results.pendleLpTvl = marketResponse.data.liquidity.usd || 0;
+                results.pendleOct23.lpTvl = marketResponseOct23.data.liquidity.usd || 0;
+                results.pendleOct23.ytTvl = ytTotalSupplyOct23 * liveAlUsdPrice;
+                results.pendleOct23.ptTvl = totalPtOct23 * ptPriceOct23; // EXCLUDED from points
                 
-                // YT TVL - Using ACTUAL YT supply from Etherscan
-                // YT holders get 5x boost
-                // For points calculation: 1 YT = 1 alUSD = $1.02 (fixed price)
-                results.pendleYtTvl = ytTotalSupply * ALMANAK_POINTS_CONFIG.alUsdPrice;
-                
-                // PT TVL - MUST BE EXCLUDED from points calculation
-                // PT holders get ZERO points, so we subtract this from total
-                // Using actual PT price from Pendle API
-                results.pendlePtTvl = totalPt * ptPrice;
+                console.log('✅ October 23 Market - LP:', results.pendleOct23.lpTvl, 'YT:', results.pendleOct23.ytTvl, 'PT:', results.pendleOct23.ptTvl);
             }
+            
+            // Fetch December 11 market data
+            const marketResponseDec11 = await getMarketData(PENDLE_CONFIG.MARKET_DEC11.address);
+            if (marketResponseDec11.success && marketResponseDec11.data.liquidity) {
+                const totalPtDec11 = marketResponseDec11.data.totalPt || 0;
+                const ptPriceDec11 = marketResponseDec11.data.assetPriceUsd || liveAlUsdPrice;
+                
+                results.pendleDec11.lpTvl = marketResponseDec11.data.liquidity.usd || 0;
+                results.pendleDec11.ytTvl = ytTotalSupplyDec11 * liveAlUsdPrice;
+                results.pendleDec11.ptTvl = totalPtDec11 * ptPriceDec11; // EXCLUDED from points
+                
+                console.log('✅ December 11 Market - LP:', results.pendleDec11.lpTvl, 'YT:', results.pendleDec11.ytTvl, 'PT:', results.pendleDec11.ptTvl);
+            }
+            
+            // Calculate combined totals for backward compatibility
+            results.pendleLpTvl = results.pendleOct23.lpTvl + results.pendleDec11.lpTvl;
+            results.pendleYtTvl = results.pendleOct23.ytTvl + results.pendleDec11.ytTvl;
+            results.pendlePtTvl = results.pendleOct23.ptTvl + results.pendleDec11.ptTvl;
+            
         } catch (error) {
             console.error("Pendle Market API Error:", error);
         }
         
         // Calculate total TVL = Gross TVL - SY alUSD (to avoid double counting)
-        const syAlUsdValue = results.syAlUsdBalance * ALMANAK_POINTS_CONFIG.alUsdPrice;
+        const syAlUsdValue = syAlUsdBalance * liveAlUsdPrice;
         results.totalTvl = results.defiLlamaTvl - syAlUsdValue;
         
         // Calculate Other TVL
         // Other TVL = Everything NOT in Pendle (SY, LP) and NOT in Curve
-        // Other TVL = Gross TVL - SY alUSD - LP TVL - Curve TVL
+        // Other TVL = Gross TVL - SY alUSD - Combined LP TVL (both markets) - Curve TVL
         results.otherTvl = results.grossTvl - syAlUsdValue - results.pendleLpTvl - results.curveTvl;
         
         // Ensure non-negative values
@@ -424,33 +524,58 @@ async function fetchTvlData() {
  * Calculate weighted TVL for points distribution
  * Apply boost multipliers to each category:
  * - Other: 1x (no boost)
- * - LP: 1.25x
- * - YT: 5x (using YT count × $1.0243)
+ * - LP: 1.25x (separate for each market)
+ * - YT: 5x (separate for each market)
  * - Curve: 3x
  * @param {Object} tvlData - TVL breakdown data
- * @returns {Object} Weighted TVL calculation
+ * @returns {Object} Weighted TVL calculation with separate market data
  */
 function calculateWeightedTvl(tvlData) {
-    // Get YT count from YT TVL (reverse the pricing to get token count)
-    const ytCount = tvlData.pendleYtTvl / ALMANAK_POINTS_CONFIG.alUsdPrice;
+    // Calculate weighted values for October 23 market
+    const ytCountOct23 = tvlData.pendleOct23.ytTvl / ALMANAK_POINTS_CONFIG.alUsdPrice;
+    const weightedLpOct23 = tvlData.pendleOct23.lpTvl * 1.25;  // 1.25x boost
+    const weightedYtOct23 = (ytCountOct23 * ALMANAK_POINTS_CONFIG.alUsdPrice) * 5;  // 5x boost
     
-    // Apply boost multipliers to each category
+    // Calculate weighted values for December 11 market
+    const ytCountDec11 = tvlData.pendleDec11.ytTvl / ALMANAK_POINTS_CONFIG.alUsdPrice;
+    const weightedLpDec11 = tvlData.pendleDec11.lpTvl * 1.25;  // 1.25x boost
+    const weightedYtDec11 = (ytCountDec11 * ALMANAK_POINTS_CONFIG.alUsdPrice) * 5;  // 5x boost
+    
+    // Calculate weighted values for other categories
     const weightedOther = tvlData.otherTvl * 1;  // 1x boost (no boost)
-    const weightedLp = tvlData.pendleLpTvl * 1.25;  // 1.25x boost
-    const weightedYt = (ytCount * ALMANAK_POINTS_CONFIG.alUsdPrice) * 5;  // (YT × $1.0243) × 5
     const weightedCurve = tvlData.curveTvl * 3;  // 3x boost
+    
+    // Combined weighted values (for backward compatibility)
+    const weightedLp = weightedLpOct23 + weightedLpDec11;
+    const weightedYt = weightedYtOct23 + weightedYtDec11;
     
     // Total weighted TVL = sum of all weighted categories
     const totalWeightedTvl = weightedOther + weightedLp + weightedYt + weightedCurve;
     
     return {
+        // Separate market data
+        oct23: {
+            ytTvl: tvlData.pendleOct23.ytTvl,
+            lpTvl: tvlData.pendleOct23.lpTvl,
+            ptTvl: tvlData.pendleOct23.ptTvl,
+            weightedYt: weightedYtOct23,
+            weightedLp: weightedLpOct23
+        },
+        dec11: {
+            ytTvl: tvlData.pendleDec11.ytTvl,
+            lpTvl: tvlData.pendleDec11.lpTvl,
+            ptTvl: tvlData.pendleDec11.ptTvl,
+            weightedYt: weightedYtDec11,
+            weightedLp: weightedLpDec11
+        },
+        // Combined/shared data
         otherTvl: tvlData.otherTvl,
-        ytTvl: tvlData.pendleYtTvl,
-        lpTvl: tvlData.pendleLpTvl,
+        ytTvl: tvlData.pendleYtTvl,  // Combined for backward compatibility
+        lpTvl: tvlData.pendleLpTvl,  // Combined for backward compatibility
         curveTvl: tvlData.curveTvl,
         weightedOther: weightedOther,
-        weightedYt: weightedYt,
-        weightedLp: weightedLp,
+        weightedYt: weightedYt,  // Combined
+        weightedLp: weightedLp,  // Combined
         weightedCurve: weightedCurve,
         totalWeightedTvl: totalWeightedTvl,
         totalTvl: tvlData.totalTvl
@@ -587,6 +712,7 @@ window.PendleAPI = {
     calculateMoonshot,
     formatApiResponse,
     getMarketData,
+    getAllMarketsData,
     getDaysToMaturity,
     calculateMaturityApy,
     calculateMaturityEarnings,

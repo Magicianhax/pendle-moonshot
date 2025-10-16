@@ -578,19 +578,56 @@
         </div>
         
         <div class="content">
-            <!-- Market Info Section -->
-            <div class="market-info">
-                <div class="info-item">
-                    <span class="info-label">Pool Matures In</span>
-                    <span class="info-value countdown" id="countdown">Loading...</span>
+            <!-- Dual Market Info Section - Slim Rows -->
+            <div style="margin-bottom: 24px;">
+                <!-- October 23 Market Row -->
+                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #3b82f6; padding: 14px 20px; margin-bottom: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px; min-width: 200px;">
+                        <span style="font-size: 1.25rem;">📅</span>
+                        <div>
+                            <div style="font-weight: 700; color: #1e40af; font-size: 0.95rem;">October 23, 2025</div>
+                            <div style="font-size: 0.75rem; color: #6b7280;">Market</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Days Left</div>
+                            <div id="countdownOct23" style="font-size: 1.25rem; font-weight: 700; color: #1e40af;">Loading...</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Underlying APY</div>
+                            <div id="underlyingApyOct23" style="font-size: 1.1rem; font-weight: 700; color: #1e40af;">Loading...</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Implied APY</div>
+                            <div id="impliedApyOct23" style="font-size: 1.1rem; font-weight: 700; color: #1e40af;">Loading...</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">Live Underlying APY</span>
-                    <span class="info-value apy" id="underlyingApy">Loading...</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Live Implied APY</span>
-                    <span class="info-value apy" id="impliedApy">Loading...</span>
+                
+                <!-- December 11 Market Row -->
+                <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-left: 4px solid #10b981; padding: 14px 20px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px; min-width: 200px;">
+                        <span style="font-size: 1.25rem;">📅</span>
+                        <div>
+                            <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">December 11, 2025</div>
+                            <div style="font-size: 0.75rem; color: #6b7280;">Market</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Days Left</div>
+                            <div id="countdownDec11" style="font-size: 1.25rem; font-weight: 700; color: #065f46;">Loading...</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Underlying APY</div>
+                            <div id="underlyingApyDec11" style="font-size: 1.1rem; font-weight: 700; color: #065f46;">Loading...</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Implied APY</div>
+                            <div id="impliedApyDec11" style="font-size: 1.1rem; font-weight: 700; color: #065f46;">Loading...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -629,6 +666,21 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+            
+            <!-- Market Selector -->
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 12px; font-weight: 600; font-size: 1rem; color: var(--primary-black);">
+                    📊 Select Market:
+                </label>
+                <div style="display: flex; gap: 12px; background: var(--accent-gray); padding: 8px; border-radius: 12px;">
+                    <button class="market-selector-btn active" id="marketOct23Btn" style="flex: 1; padding: 16px; border: 2px solid #3b82f6; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: #1e40af; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: var(--transition);">
+                        📅 October 23, 2025
+                    </button>
+                    <button class="market-selector-btn" id="marketDec11Btn" style="flex: 1; padding: 16px; border: 2px solid var(--border-gray); background: white; color: var(--primary-black); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: var(--transition);">
+                        📅 December 11, 2025
+                    </button>
                 </div>
             </div>
             

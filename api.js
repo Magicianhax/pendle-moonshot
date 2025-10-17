@@ -560,28 +560,20 @@ async function fetchTvlData() {
         const syAlUsdValue = syAlUsdBalance * liveAlUsdPrice;
         results.totalTvl = results.defiLlamaTvl - syAlUsdValue;
         
-        // Calculate locked TVL in matured markets (to exclude from Other TVL)
-        // Assets still in matured markets are not earning points and shouldn't count toward "Other TVL"
-        let maturedLockedTvl = 0;
-        if (isOct23Matured) {
-            maturedLockedTvl += results.pendleOct23.lockedLpTvl + results.pendleOct23.lockedYtTvl;
-        }
-        if (isDec11Matured) {
-            maturedLockedTvl += results.pendleDec11.lockedLpTvl + results.pendleDec11.lockedYtTvl;
-        }
-        
         // Calculate Other TVL (NET TVL for points allocation)
         // Other TVL = Holders NOT using DeFi (not in Pendle, not in Curve)
-        // Formula: GROSS TVL - SY alUSD - Matured Market Locked TVL = NET TVL
-        // This represents the TVL eligible for 1x boost points
-        // We exclude matured market TVL to avoid double counting (those assets exist but don't earn points)
-        results.otherTvl = results.grossTvl - syAlUsdValue - maturedLockedTvl;
+        // Formula: GROSS TVL - SY alUSD = NET TVL
+        // Note: SY alUSD already includes assets from BOTH active AND matured markets
+        // We don't need to subtract matured market TVL again (would be double counting)
+        // Matured markets get 0x boost in points calculation, but their TVL still counts for visibility
+        results.otherTvl = results.grossTvl - syAlUsdValue;
         
-        console.log('📊 Other TVL Calculation:', {
+        console.log('📊 TVL Calculation:', {
             grossTvl: results.grossTvl,
             syAlUsdValue: syAlUsdValue,
-            maturedLockedTvl: maturedLockedTvl,
-            otherTvl: results.otherTvl
+            otherTvl: results.otherTvl,
+            oct23Matured: isOct23Matured,
+            dec11Matured: isDec11Matured
         });
         
         return {

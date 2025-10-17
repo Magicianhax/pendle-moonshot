@@ -74,6 +74,9 @@ async function fetchLiveAlpUsdPrice() {
     }
 }
 
+// Helper function to add delay between requests (avoid rate limiting)
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 exports.handler = async function(event, context) {
     // Enable CORS
     const headers = {
@@ -123,6 +126,7 @@ exports.handler = async function(event, context) {
         } catch (error) {
             console.error("❌ alUSD Supply Error:", error);
         }
+        await delay(250); // Avoid rate limiting
 
         // Fetch alpUSD total supply
         try {
@@ -136,6 +140,7 @@ exports.handler = async function(event, context) {
         } catch (error) {
             console.error("❌ alpUSD Supply Error:", error);
         }
+        await delay(250); // Avoid rate limiting
 
         // Fetch SY alUSD balance
         try {
@@ -149,6 +154,7 @@ exports.handler = async function(event, context) {
         } catch (error) {
             console.error("❌ SY Balance Error:", error);
         }
+        await delay(250); // Avoid rate limiting
 
         // Fetch YT total supply for October 23 market
         try {
@@ -164,6 +170,7 @@ exports.handler = async function(event, context) {
         } catch (error) {
             console.error("❌ YT Supply (Oct 23) Error:", error);
         }
+        await delay(250); // Avoid rate limiting
 
         // Fetch YT total supply for December 11 market
         try {
@@ -179,6 +186,7 @@ exports.handler = async function(event, context) {
         } catch (error) {
             console.error("❌ YT Supply (Dec 11) Error:", error);
         }
+        await delay(250); // Avoid rate limiting
 
         // Fetch Curve pool USDC balance
         try {
@@ -192,6 +200,7 @@ exports.handler = async function(event, context) {
         } catch (error) {
             console.error("❌ Curve USDC Error:", error);
         }
+        await delay(250); // Avoid rate limiting
 
         // Fetch Curve pool alUSD balance
         try {

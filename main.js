@@ -714,26 +714,29 @@ function displayTvlBreakdown() {
         </tr>
         
         <!-- October 23 Market -->
-        <tr style="background-color: #eff6ff; border-top: 2px solid #3b82f6;">
+        <tr style="background-color: ${weighted.oct23.isMatured ? '#fef3c7' : '#eff6ff'}; border-top: 2px solid ${weighted.oct23.isMatured ? '#f59e0b' : '#3b82f6'};">
             <td colspan="6" style="padding: 10px 16px;">
-                <strong style="font-size: 0.95rem; color: #1e40af;">📅 October 23, 2025 Market</strong>
+                <strong style="font-size: 0.95rem; color: ${weighted.oct23.isMatured ? '#92400e' : '#1e40af'};">
+                    📅 October 23, 2025 Market ${weighted.oct23.isMatured ? '⚠️ MATURED' : ''}
+                </strong>
+                ${weighted.oct23.isMatured ? '<div style="font-size: 0.8rem; color: #92400e; margin-top: 4px;">⚠️ Market has matured. No points earned. Please migrate to active markets.</div>' : ''}
             </td>
         </tr>
-        <tr style="background-color: #f9fafb;">
-            <td><span class="tvl-type">YT Oct 23</span><span class="tvl-boost boost-5x">5x Boost</span></td>
-            <td>${formatCurrency(weighted.oct23.ytTvl)}</td>
-            <td>5x</td>
-            <td>${formatCurrency(weighted.oct23.weightedYt)}</td>
-            <td><strong>${formatNumber(ytDailyPointsOct23)}</strong> <span style="font-size: 0.8em; color: #6c757d;">(gross)</span></td>
-            <td>${ytShareOct23.toFixed(2)}%</td>
+        <tr style="background-color: #f9fafb; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
+            <td><span class="tvl-type">YT Oct 23</span><span class="tvl-boost ${weighted.oct23.isMatured ? '' : 'boost-5x'}" style="${weighted.oct23.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x (Matured)' : '5x Boost'}</span></td>
+            <td>${formatCurrency(weighted.oct23.ytTvl)}${weighted.oct23.isMatured && weighted.oct23.lockedYtTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked: ' + formatCurrency(weighted.oct23.lockedYtTvl) + ')</span>' : ''}</td>
+            <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x' : '5x'}</td>
+            <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.oct23.weightedYt)}</td>
+            <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(ytDailyPointsOct23)}</strong> ${!weighted.oct23.isMatured ? '<span style="font-size: 0.8em; color: #6c757d;">(gross)</span>' : ''}</td>
+            <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${ytShareOct23.toFixed(2)}%</td>
         </tr>
-        <tr style="background-color: #ffffff;">
-            <td><span class="tvl-type">LP Oct 23</span><span class="tvl-boost boost-1-25x">1.25x Boost</span></td>
-            <td>${formatCurrency(weighted.oct23.lpTvl)}</td>
-            <td>1.25x</td>
-            <td>${formatCurrency(weighted.oct23.weightedLp)}</td>
-            <td><strong>${formatNumber(lpDailyPointsOct23)}</strong></td>
-            <td>${lpShareOct23.toFixed(2)}%</td>
+        <tr style="background-color: #ffffff; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
+            <td><span class="tvl-type">LP Oct 23</span><span class="tvl-boost ${weighted.oct23.isMatured ? '' : 'boost-1-25x'}" style="${weighted.oct23.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x (Matured)' : '1.25x Boost'}</span></td>
+            <td>${formatCurrency(weighted.oct23.lpTvl)}${weighted.oct23.isMatured && weighted.oct23.lockedLpTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked)</span>' : ''}</td>
+            <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x' : '1.25x'}</td>
+            <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.oct23.weightedLp)}</td>
+            <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(lpDailyPointsOct23)}</strong></td>
+            <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${lpShareOct23.toFixed(2)}%</td>
         </tr>
         <tr style="opacity: 0.6; background-color: #fee2e2;">
             <td><span class="tvl-type">PT Oct 23</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
@@ -745,26 +748,29 @@ function displayTvlBreakdown() {
         </tr>
         
         <!-- December 11 Market -->
-        <tr style="background-color: #f0fdf4; border-top: 2px solid #10b981;">
+        <tr style="background-color: ${weighted.dec11.isMatured ? '#fef3c7' : '#f0fdf4'}; border-top: 2px solid ${weighted.dec11.isMatured ? '#f59e0b' : '#10b981'};">
             <td colspan="6" style="padding: 10px 16px;">
-                <strong style="font-size: 0.95rem; color: #065f46;">📅 December 11, 2025 Market</strong>
+                <strong style="font-size: 0.95rem; color: ${weighted.dec11.isMatured ? '#92400e' : '#065f46'};">
+                    📅 December 11, 2025 Market ${weighted.dec11.isMatured ? '⚠️ MATURED' : ''}
+                </strong>
+                ${weighted.dec11.isMatured ? '<div style="font-size: 0.8rem; color: #92400e; margin-top: 4px;">⚠️ Market has matured. No points earned. Please migrate to active markets.</div>' : ''}
             </td>
         </tr>
-        <tr style="background-color: #f9fafb;">
-            <td><span class="tvl-type">YT Dec 11</span><span class="tvl-boost boost-5x">5x Boost</span></td>
-            <td>${formatCurrency(weighted.dec11.ytTvl)}</td>
-            <td>5x</td>
-            <td>${formatCurrency(weighted.dec11.weightedYt)}</td>
-            <td><strong>${formatNumber(ytDailyPointsDec11)}</strong> <span style="font-size: 0.8em; color: #6c757d;">(gross)</span></td>
-            <td>${ytShareDec11.toFixed(2)}%</td>
+        <tr style="background-color: #f9fafb; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+            <td><span class="tvl-type">YT Dec 11</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : 'boost-5x'}" style="${weighted.dec11.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : '5x Boost'}</span></td>
+            <td>${formatCurrency(weighted.dec11.ytTvl)}${weighted.dec11.isMatured && weighted.dec11.lockedYtTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked: ' + formatCurrency(weighted.dec11.lockedYtTvl) + ')</span>' : ''}</td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x' : '5x'}</td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.dec11.weightedYt)}</td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(ytDailyPointsDec11)}</strong> ${!weighted.dec11.isMatured ? '<span style="font-size: 0.8em; color: #6c757d;">(gross)</span>' : ''}</td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${ytShareDec11.toFixed(2)}%</td>
         </tr>
-        <tr style="background-color: #ffffff;">
-            <td><span class="tvl-type">LP Dec 11</span><span class="tvl-boost boost-1-25x">1.25x Boost</span></td>
-            <td>${formatCurrency(weighted.dec11.lpTvl)}</td>
-            <td>1.25x</td>
-            <td>${formatCurrency(weighted.dec11.weightedLp)}</td>
-            <td><strong>${formatNumber(lpDailyPointsDec11)}</strong></td>
-            <td>${lpShareDec11.toFixed(2)}%</td>
+        <tr style="background-color: #ffffff; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+            <td><span class="tvl-type">LP Dec 11</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : 'boost-1-25x'}" style="${weighted.dec11.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : '1.25x Boost'}</span></td>
+            <td>${formatCurrency(weighted.dec11.lpTvl)}${weighted.dec11.isMatured && weighted.dec11.lockedLpTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked)</span>' : ''}</td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x' : '1.25x'}</td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.dec11.weightedLp)}</td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(lpDailyPointsDec11)}</strong></td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${lpShareDec11.toFixed(2)}%</td>
         </tr>
         <tr style="opacity: 0.6; background-color: #fee2e2;">
             <td><span class="tvl-type">PT Dec 11</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
@@ -853,7 +859,7 @@ function displayTvlBreakdown() {
             <td>5%</td>
         </tr>
         <tr style="background-color: #fef3c7; border-top: 1px solid #f59e0b;">
-            <td><span class="tvl-type" style="color: #92400e;">Pendle Fees (goes to Pendle)</span></td>
+            <td><span class="tvl-type" style="color: #92400e;">Pendle Fees (5% of YT, goes to Pendle)</span></td>
             <td>-</td>
             <td>-</td>
             <td>-</td>

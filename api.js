@@ -254,6 +254,26 @@ async function getAllMarketsData() {
 }
 
 /**
+ * Check if a market has reached maturity
+ * @param {string} marketKey - Market key ('oct23' or 'dec11')
+ * @returns {boolean} True if market is matured
+ */
+function isMarketMatured(marketKey = 'oct23') {
+    const now = new Date();
+    const maturityDateString = marketKey === 'dec11' 
+        ? PENDLE_CONFIG.MARKET_DEC11.maturityDate 
+        : PENDLE_CONFIG.MARKET_OCT23.maturityDate;
+    
+    const maturityDate = new Date(maturityDateString);
+    
+    // Get UTC dates at start of day
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const maturityUTC = new Date(Date.UTC(maturityDate.getUTCFullYear(), maturityDate.getUTCMonth(), maturityDate.getUTCDate()));
+    
+    return todayUTC >= maturityUTC;
+}
+
+/**
  * Calculate days remaining until maturity using UTC time
  * @param {string} marketKey - Market key ('oct23' or 'dec11'), defaults to 'oct23'
  * @returns {number} Days remaining
@@ -419,6 +439,15 @@ async function fetchTvlData() {
         console.log('✅ YT Supply (Oct 23) from backend:', ytTotalSupplyOct23);
         console.log('✅ YT Supply (Dec 11) from backend:', ytTotalSupplyDec11);
         
+        // Check maturity status for each market
+        const isOct23Matured = isMarketMatured('oct23');
+        const isDec11Matured = isMarketMatured('dec11');
+        
+        console.log('📅 Market Maturity Status:', {
+            oct23Matured: isOct23Matured,
+            dec11Matured: isDec11Matured
+        });
+        
         // Now create results object with all the data
         const results = {
             alUsdSupply: alUsdSupply,
@@ -432,12 +461,19 @@ async function fetchTvlData() {
             pendleOct23: {
                 lpTvl: 0,
                 ytTvl: 0,
-                ptTvl: 0
+                ptTvl: 0,
+                isMatured: isOct23Matured,
+                // Track actual locked TVL even if matured (for visibility & calculations)
+                lockedLpTvl: 0,
+                lockedYtTvl: 0
             },
             pendleDec11: {
                 lpTvl: 0,
                 ytTvl: 0,
-                ptTvl: 0
+                ptTvl: 0,
+                isMatured: isDec11Matured,
+                lockedLpTvl: 0,
+                lockedYtTvl: 0
             },
             // Legacy fields (sum of both markets for backward compatibility)
             pendleLpTvl: 0,
@@ -464,12 +500,25 @@ async function fetchTvlData() {
             if (marketResponseOct23.success && marketResponseOct23.data.liquidity) {
                 const totalPtOct23 = marketResponseOct23.data.totalPt || 0;
                 const ptPriceOct23 = marketResponseOct23.data.assetPriceUsd || liveAlUsdPrice;
+                const actualLpTvl = marketResponseOct23.data.liquidity.usd || 0;
+                const actualYtTvl = ytTotalSupplyOct23 * liveAlUsdPrice;
                 
-                results.pendleOct23.lpTvl = marketResponseOct23.data.liquidity.usd || 0;
-                results.pendleOct23.ytTvl = ytTotalSupplyOct23 * liveAlUsdPrice;
+                // Store actual locked TVL for visibility
+                results.pendleOct23.lockedLpTvl = actualLpTvl;
+                results.pendleOct23.lockedYtTvl = actualYtTvl;
+                
+                // If matured: YT shows as $0, LP shows actual (for migration tracking)
+                if (isOct23Matured) {
+                    results.pendleOct23.lpTvl = actualLpTvl; // Keep showing LP TVL for visibility
+                    results.pendleOct23.ytTvl = 0; // YT value is $0 at maturity
+                    console.log('⚠️ October 23 Market MATURED - Locked LP:', actualLpTvl, 'Locked YT:', actualYtTvl, '(shown as $0)');
+                } else {
+                    results.pendleOct23.lpTvl = actualLpTvl;
+                    results.pendleOct23.ytTvl = actualYtTvl;
+                    console.log('✅ October 23 Market - LP:', results.pendleOct23.lpTvl, 'YT:', results.pendleOct23.ytTvl);
+                }
+                
                 results.pendleOct23.ptTvl = totalPtOct23 * ptPriceOct23; // EXCLUDED from points
-                
-                console.log('✅ October 23 Market - LP:', results.pendleOct23.lpTvl, 'YT:', results.pendleOct23.ytTvl, 'PT:', results.pendleOct23.ptTvl);
             }
             
             // Fetch December 11 market data
@@ -477,12 +526,25 @@ async function fetchTvlData() {
             if (marketResponseDec11.success && marketResponseDec11.data.liquidity) {
                 const totalPtDec11 = marketResponseDec11.data.totalPt || 0;
                 const ptPriceDec11 = marketResponseDec11.data.assetPriceUsd || liveAlUsdPrice;
+                const actualLpTvl = marketResponseDec11.data.liquidity.usd || 0;
+                const actualYtTvl = ytTotalSupplyDec11 * liveAlUsdPrice;
                 
-                results.pendleDec11.lpTvl = marketResponseDec11.data.liquidity.usd || 0;
-                results.pendleDec11.ytTvl = ytTotalSupplyDec11 * liveAlUsdPrice;
+                // Store actual locked TVL for visibility
+                results.pendleDec11.lockedLpTvl = actualLpTvl;
+                results.pendleDec11.lockedYtTvl = actualYtTvl;
+                
+                // If matured: YT shows as $0, LP shows actual (for migration tracking)
+                if (isDec11Matured) {
+                    results.pendleDec11.lpTvl = actualLpTvl;
+                    results.pendleDec11.ytTvl = 0; // YT value is $0 at maturity
+                    console.log('⚠️ December 11 Market MATURED - Locked LP:', actualLpTvl, 'Locked YT:', actualYtTvl, '(shown as $0)');
+                } else {
+                    results.pendleDec11.lpTvl = actualLpTvl;
+                    results.pendleDec11.ytTvl = actualYtTvl;
+                    console.log('✅ December 11 Market - LP:', results.pendleDec11.lpTvl, 'YT:', results.pendleDec11.ytTvl);
+                }
+                
                 results.pendleDec11.ptTvl = totalPtDec11 * ptPriceDec11; // EXCLUDED from points
-                
-                console.log('✅ December 11 Market - LP:', results.pendleDec11.lpTvl, 'YT:', results.pendleDec11.ytTvl, 'PT:', results.pendleDec11.ptTvl);
             }
             
             // Calculate combined totals for backward compatibility
@@ -498,15 +560,27 @@ async function fetchTvlData() {
         const syAlUsdValue = syAlUsdBalance * liveAlUsdPrice;
         results.totalTvl = results.defiLlamaTvl - syAlUsdValue;
         
+        // Calculate locked TVL in matured markets (to exclude from Other TVL)
+        // Assets still in matured markets are not earning points and shouldn't count toward "Other TVL"
+        let maturedLockedTvl = 0;
+        if (isOct23Matured) {
+            maturedLockedTvl += results.pendleOct23.lockedLpTvl + results.pendleOct23.lockedYtTvl;
+        }
+        if (isDec11Matured) {
+            maturedLockedTvl += results.pendleDec11.lockedLpTvl + results.pendleDec11.lockedYtTvl;
+        }
+        
         // Calculate Other TVL (NET TVL for points allocation)
         // Other TVL = Holders NOT using DeFi (not in Pendle, not in Curve)
-        // Formula: GROSS TVL - SY alUSD = NET TVL
+        // Formula: GROSS TVL - SY alUSD - Matured Market Locked TVL = NET TVL
         // This represents the TVL eligible for 1x boost points
-        results.otherTvl = results.grossTvl - syAlUsdValue;
+        // We exclude matured market TVL to avoid double counting (those assets exist but don't earn points)
+        results.otherTvl = results.grossTvl - syAlUsdValue - maturedLockedTvl;
         
         console.log('📊 Other TVL Calculation:', {
             grossTvl: results.grossTvl,
             syAlUsdValue: syAlUsdValue,
+            maturedLockedTvl: maturedLockedTvl,
             otherTvl: results.otherTvl
         });
         
@@ -528,22 +602,33 @@ async function fetchTvlData() {
  * Calculate weighted TVL for points distribution
  * Apply boost multipliers to each category:
  * - Other: 1x (no boost)
- * - LP: 1.25x (separate for each market)
- * - YT: 5x (separate for each market)
+ * - LP: 1.25x (separate for each market, 0x if matured)
+ * - YT: 5x (separate for each market, 0x if matured)
  * - Curve: 3x
+ * Matured markets receive 0x boost (no points)
  * @param {Object} tvlData - TVL breakdown data
  * @returns {Object} Weighted TVL calculation with separate market data
  */
 function calculateWeightedTvl(tvlData) {
+    // Check maturity status for boost calculation
+    const isOct23Matured = tvlData.pendleOct23.isMatured || false;
+    const isDec11Matured = tvlData.pendleDec11.isMatured || false;
+    
     // Calculate weighted values for October 23 market
+    // If matured: 0x boost (no points earned)
     const ytCountOct23 = tvlData.pendleOct23.ytTvl / ALMANAK_POINTS_CONFIG.alUsdPrice;
-    const weightedLpOct23 = tvlData.pendleOct23.lpTvl * 1.25;  // 1.25x boost
-    const weightedYtOct23 = (ytCountOct23 * ALMANAK_POINTS_CONFIG.alUsdPrice) * 5;  // 5x boost
+    const lpBoostOct23 = isOct23Matured ? 0 : 1.25;  // 0x if matured, 1.25x if active
+    const ytBoostOct23 = isOct23Matured ? 0 : 5;     // 0x if matured, 5x if active
+    const weightedLpOct23 = tvlData.pendleOct23.lpTvl * lpBoostOct23;
+    const weightedYtOct23 = (ytCountOct23 * ALMANAK_POINTS_CONFIG.alUsdPrice) * ytBoostOct23;
     
     // Calculate weighted values for December 11 market
+    // If matured: 0x boost (no points earned)
     const ytCountDec11 = tvlData.pendleDec11.ytTvl / ALMANAK_POINTS_CONFIG.alUsdPrice;
-    const weightedLpDec11 = tvlData.pendleDec11.lpTvl * 1.25;  // 1.25x boost
-    const weightedYtDec11 = (ytCountDec11 * ALMANAK_POINTS_CONFIG.alUsdPrice) * 5;  // 5x boost
+    const lpBoostDec11 = isDec11Matured ? 0 : 1.25;  // 0x if matured, 1.25x if active
+    const ytBoostDec11 = isDec11Matured ? 0 : 5;     // 0x if matured, 5x if active
+    const weightedLpDec11 = tvlData.pendleDec11.lpTvl * lpBoostDec11;
+    const weightedYtDec11 = (ytCountDec11 * ALMANAK_POINTS_CONFIG.alUsdPrice) * ytBoostDec11;
     
     // Calculate weighted values for other categories
     const weightedOther = tvlData.otherTvl * 1;  // 1x boost (no boost)
@@ -556,21 +641,42 @@ function calculateWeightedTvl(tvlData) {
     // Total weighted TVL = sum of all weighted categories
     const totalWeightedTvl = weightedOther + weightedLp + weightedYt + weightedCurve;
     
+    if (isOct23Matured || isDec11Matured) {
+        console.log('⚠️ Matured Markets Detected - Points Distribution Adjusted:', {
+            oct23Matured: isOct23Matured,
+            dec11Matured: isDec11Matured,
+            oct23WeightedLp: weightedLpOct23,
+            oct23WeightedYt: weightedYtOct23,
+            dec11WeightedLp: weightedLpDec11,
+            dec11WeightedYt: weightedYtDec11
+        });
+    }
+    
     return {
         // Separate market data
         oct23: {
             ytTvl: tvlData.pendleOct23.ytTvl,
             lpTvl: tvlData.pendleOct23.lpTvl,
             ptTvl: tvlData.pendleOct23.ptTvl,
+            isMatured: isOct23Matured,
+            lockedYtTvl: tvlData.pendleOct23.lockedYtTvl || 0,
+            lockedLpTvl: tvlData.pendleOct23.lockedLpTvl || 0,
             weightedYt: weightedYtOct23,
-            weightedLp: weightedLpOct23
+            weightedLp: weightedLpOct23,
+            ytBoost: ytBoostOct23,
+            lpBoost: lpBoostOct23
         },
         dec11: {
             ytTvl: tvlData.pendleDec11.ytTvl,
             lpTvl: tvlData.pendleDec11.lpTvl,
             ptTvl: tvlData.pendleDec11.ptTvl,
+            isMatured: isDec11Matured,
+            lockedYtTvl: tvlData.pendleDec11.lockedYtTvl || 0,
+            lockedLpTvl: tvlData.pendleDec11.lockedLpTvl || 0,
             weightedYt: weightedYtDec11,
-            weightedLp: weightedLpDec11
+            weightedLp: weightedLpDec11,
+            ytBoost: ytBoostDec11,
+            lpBoost: lpBoostDec11
         },
         // Combined/shared data
         otherTvl: tvlData.otherTvl,
@@ -717,6 +823,7 @@ window.PendleAPI = {
     formatApiResponse,
     getMarketData,
     getAllMarketsData,
+    isMarketMatured,
     getDaysToMaturity,
     calculateMaturityApy,
     calculateMaturityEarnings,

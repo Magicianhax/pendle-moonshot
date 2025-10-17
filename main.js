@@ -730,6 +730,22 @@ function displayTvlBreakdown() {
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(ytDailyPointsOct23)}</strong> ${!weighted.oct23.isMatured ? '<span style="font-size: 0.8em; color: #6c757d;">(gross)</span>' : ''}</td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${ytShareOct23.toFixed(2)}%</td>
         </tr>
+        <tr style="background-color: #fee2e2; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
+            <td style="padding-left: 20px;"><span class="tvl-type" style="color: #991b1b;">├─ Pendle Fee (5%)</span></td>
+            <td style="color: #991b1b;">-</td>
+            <td style="color: #991b1b;">-</td>
+            <td style="color: #991b1b;">-</td>
+            <td style="color: #991b1b;"><strong>-${formatNumber(ytDailyPointsOct23 * 0.05)}</strong></td>
+            <td style="color: #991b1b;">-${((ytDailyPointsOct23 * 0.05 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
+        </tr>
+        <tr style="background-color: #dcfce7; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
+            <td style="padding-left: 20px;"><span class="tvl-type" style="color: #166534;">└─ YT Oct 23 NET</span></td>
+            <td style="color: #166534;">-</td>
+            <td style="color: #166534;">-</td>
+            <td style="color: #166534;">-</td>
+            <td style="color: #166534;"><strong>${formatNumber(ytDailyPointsOct23 * 0.95)}</strong> <span style="font-size: 0.8em;">(net)</span></td>
+            <td style="color: #166534;">${((ytDailyPointsOct23 * 0.95 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
+        </tr>
         <tr style="background-color: #ffffff; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
             <td><span class="tvl-type">LP Oct 23</span><span class="tvl-boost ${weighted.oct23.isMatured ? '' : 'boost-1-25x'}" style="${weighted.oct23.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x (Matured)' : '1.25x Boost'}</span></td>
             <td>${formatCurrency(weighted.oct23.lpTvl)}${weighted.oct23.isMatured && weighted.oct23.lockedLpTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked)</span>' : ''}</td>
@@ -763,6 +779,22 @@ function displayTvlBreakdown() {
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.dec11.weightedYt)}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(ytDailyPointsDec11)}</strong> ${!weighted.dec11.isMatured ? '<span style="font-size: 0.8em; color: #6c757d;">(gross)</span>' : ''}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${ytShareDec11.toFixed(2)}%</td>
+        </tr>
+        <tr style="background-color: #fee2e2; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+            <td style="padding-left: 20px;"><span class="tvl-type" style="color: #991b1b;">├─ Pendle Fee (5%)</span></td>
+            <td style="color: #991b1b;">-</td>
+            <td style="color: #991b1b;">-</td>
+            <td style="color: #991b1b;">-</td>
+            <td style="color: #991b1b;"><strong>-${formatNumber(ytDailyPointsDec11 * 0.05)}</strong></td>
+            <td style="color: #991b1b;">-${((ytDailyPointsDec11 * 0.05 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
+        </tr>
+        <tr style="background-color: #dcfce7; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+            <td style="padding-left: 20px;"><span class="tvl-type" style="color: #166534;">└─ YT Dec 11 NET</span></td>
+            <td style="color: #166534;">-</td>
+            <td style="color: #166534;">-</td>
+            <td style="color: #166534;">-</td>
+            <td style="color: #166534;"><strong>${formatNumber(ytDailyPointsDec11 * 0.95)}</strong> <span style="font-size: 0.8em;">(net)</span></td>
+            <td style="color: #166534;">${((ytDailyPointsDec11 * 0.95 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
         </tr>
         <tr style="background-color: #ffffff; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
             <td><span class="tvl-type">LP Dec 11</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : 'boost-1-25x'}" style="${weighted.dec11.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : '1.25x Boost'}</span></td>

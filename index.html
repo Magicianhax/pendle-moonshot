@@ -14,18 +14,19 @@
         :root {
             --primary-black: #000000;
             --primary-white: #ffffff;
-            --accent-gray: #f8f9fa;
-            --border-gray: #e9ecef;
-            --text-gray: #6c757d;
-            --success-green: #28a745;
-            --warning-orange: #fd7e14;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --accent-gray: #f5f5f5;
+            --border-black: #000000;
+            --border-gray: #cccccc;
+            --text-gray: #333333;
+            --success-green: #059669;
+            --warning-red: #dc2626;
+            --info-blue: #2563eb;
+            --warning-yellow: #f59e0b;
             --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: var(--primary-white);
             color: var(--primary-black);
             min-height: 100vh;
             display: flex;
@@ -36,48 +37,24 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             width: 100%;
             background-color: var(--primary-white);
             margin-top: 40px;
-            border-radius: 16px;
-            box-shadow: var(--shadow-lg);
+            border: 3px solid var(--border-black);
             overflow: hidden;
-            transition: var(--transition);
-        }
-
-        .container:hover {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
 
         .header {
-            background: linear-gradient(135deg, var(--primary-black) 0%, #333333 100%);
+            background: var(--primary-black);
             color: var(--primary-white);
             padding: 40px 30px;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-            transform: translateX(-100%);
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+            border-bottom: 3px solid var(--border-black);
         }
 
         .content {
-            padding: 40px 30px;
+            padding: 48px 40px;
         }
 
         h1 {
@@ -97,14 +74,14 @@
         }
 
         .input-section {
-            margin-bottom: 32px;
+            margin-bottom: 28px;
         }
 
         label {
             display: block;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 600;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             color: var(--primary-black);
         }
 
@@ -112,79 +89,51 @@
             width: 100%;
             padding: 16px 20px;
             font-size: 1.125rem;
-            border: 2px solid var(--border-gray);
+            border: 2px solid var(--border-black);
             background-color: var(--primary-white);
             color: var(--primary-black);
             outline: none;
-            border-radius: 12px;
             transition: var(--transition);
             font-family: inherit;
         }
 
         input[type="number"]:focus {
             border-color: var(--primary-black);
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
-            transform: translateY(-1px);
-        }
-
-        input[type="number"]:hover {
-            border-color: #666666;
+            border-width: 3px;
         }
 
         .calculate-btn {
             width: 100%;
-            padding: 18px 24px;
-            font-size: 1.125rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--primary-black) 0%, #333333 100%);
+            padding: 20px 28px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            background: var(--primary-black);
             color: var(--primary-white);
-            border: none;
-            border-radius: 12px;
+            border: 3px solid var(--border-black);
             cursor: pointer;
-            margin-bottom: 32px;
+            margin-bottom: 40px;
             transition: var(--transition);
-            position: relative;
-            overflow: hidden;
             font-family: inherit;
-        }
-
-        .calculate-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: var(--transition);
-        }
-
-        .calculate-btn:hover::before {
-            left: 100%;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .calculate-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .calculate-btn:active {
-            transform: translateY(0);
+            background: var(--primary-white);
+            color: var(--primary-black);
         }
 
         .calculate-btn:disabled {
-            background: #6c757d;
+            background: #999999;
             cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+            border-color: #999999;
         }
 
         .results {
-            border: 1px solid var(--border-gray);
-            padding: 24px;
-            background-color: var(--accent-gray);
+            border: 3px solid var(--border-black);
+            padding: 32px;
+            background-color: var(--primary-white);
             display: none;
-            border-radius: 12px;
             transition: var(--transition);
         }
 
@@ -208,38 +157,30 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-gray);
-            font-size: 1rem;
+            padding: 16px 0;
+            border-bottom: 2px solid var(--border-black);
+            font-size: 1.05rem;
         }
 
         .result-item:last-child {
-            border-bottom: none;
-            font-weight: 600;
-            font-size: 1.125rem;
+            border-bottom: 3px solid var(--border-black);
+            font-weight: 700;
+            font-size: 1.15rem;
         }
 
         .result-label {
             font-weight: 600;
             color: var(--primary-black);
+            flex: 1;
         }
 
         .result-value {
             font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
             font-weight: 500;
             color: var(--primary-black);
+            text-align: right;
         }
 
-        .error {
-            background-color: #fff5f5;
-            border: 1px solid #fed7d7;
-            color: #c53030;
-            padding: 16px 20px;
-            margin-top: 24px;
-            font-weight: 500;
-            border-radius: 12px;
-            border-left: 4px solid #e53e3e;
-        }
 
         .loading {
             text-align: center;
@@ -265,11 +206,6 @@
             flex-direction: column;
             align-items: center;
             flex: 1;
-            transition: var(--transition);
-        }
-
-        .info-item:hover {
-            transform: translateY(-2px);
         }
 
         .info-label {
@@ -297,122 +233,137 @@
         }
 
         .result-section {
-            margin-bottom: 24px;
+            margin-bottom: 32px;
         }
 
         .result-section h3 {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: 700;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid var(--primary-black);
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 3px solid var(--border-black);
             color: var(--primary-black);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .maturity-section {
-            border-top: 2px solid var(--border-gray);
-            padding-top: 24px;
+            border-top: 3px solid var(--border-black);
+            padding-top: 32px;
+            margin-top: 32px;
         }
 
         .total-value {
-            border-top: 1px solid var(--border-gray);
+            border-top: 2px solid var(--border-black);
             padding-top: 12px;
             margin-top: 12px;
             font-size: 1.125rem;
         }
 
         .almanak-section {
-            border-top: 2px solid var(--border-gray);
+            border-top: 3px solid var(--border-black);
             padding-top: 24px;
+            margin-top: 32px;
         }
 
         .table-container {
             overflow-x: auto;
-            margin-top: 16px;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
+            margin-top: 20px;
+            border: 2px solid var(--border-black);
         }
 
         .almanak-table {
             width: 100%;
             border-collapse: collapse;
             background-color: var(--primary-white);
-            border-radius: 12px;
-            overflow: hidden;
         }
 
         .almanak-table th {
-            background: linear-gradient(135deg, var(--primary-black) 0%, #333333 100%);
+            background: var(--primary-black);
             color: var(--primary-white);
-            padding: 16px 20px;
+            padding: 18px 24px;
             text-align: center;
-            font-weight: 600;
-            font-size: 0.875rem;
+            font-weight: 700;
+            font-size: 0.9rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.1em;
+            border-right: 2px solid var(--primary-white);
+            border-bottom: 3px solid var(--border-black);
+        }
+
+        .almanak-table th:last-child {
+            border-right: none;
         }
 
         .almanak-table td {
-            padding: 14px 20px;
+            padding: 16px 24px;
             text-align: center;
-            border-bottom: 1px solid var(--border-gray);
+            border-bottom: 2px solid var(--border-black);
+            border-right: 1px solid var(--border-gray);
             font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-            transition: var(--transition);
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .almanak-table td:last-child {
+            border-right: none;
         }
 
         .almanak-table tbody tr:nth-child(even) {
             background-color: var(--accent-gray);
         }
 
-        .almanak-table tbody tr:hover {
-            background-color: #e3f2fd;
-            transform: scale(1.01);
+        .almanak-table tbody tr:last-child td {
+            border-bottom: none;
         }
 
         .fdv-cell {
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 1.05rem;
             color: var(--primary-black);
         }
 
         .apy-cell {
-            font-size: 1rem;
+            font-size: 1.05rem;
             color: var(--success-green);
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .usd-cell {
             font-weight: 700;
             color: var(--primary-black);
-            font-size: 1rem;
+            font-size: 1.05rem;
         }
 
         .tvl-breakdown {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 32px;
-            border: 1px solid #bae6fd;
-            box-shadow: var(--shadow);
+            background: var(--primary-white);
+            padding: 28px;
+            margin-bottom: 40px;
+            border: 3px solid var(--border-black);
         }
 
         .tvl-breakdown h3 {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
             color: var(--primary-black);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 3px solid var(--border-black);
+            padding-bottom: 12px;
         }
 
         .tvl-breakdown p {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: var(--text-gray);
             margin-bottom: 16px;
+            line-height: 1.6;
         }
 
         .tvl-table-container {
             overflow-x: auto;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
+            border: 2px solid var(--border-black);
+            margin-top: 20px;
         }
 
         .tvl-table {
@@ -420,32 +371,38 @@
             min-width: 100%;
             border-collapse: collapse;
             background-color: var(--primary-white);
-            border-radius: 12px;
-            overflow: hidden;
         }
 
         .tvl-table th {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            background: var(--primary-black);
             color: var(--primary-white);
-            padding: 14px 12px;
+            padding: 16px 14px;
             text-align: center;
-            font-weight: 600;
-            font-size: 0.8rem;
+            font-weight: 700;
+            font-size: 0.85rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.1em;
             white-space: nowrap;
+            border-right: 2px solid var(--primary-white);
+            border-bottom: 3px solid var(--border-black);
         }
 
         .tvl-table th:first-child {
             text-align: left;
         }
 
+        .tvl-table th:last-child {
+            border-right: none;
+        }
+
         .tvl-table td {
-            padding: 12px;
-            border-bottom: 1px solid var(--border-gray);
-            font-size: 0.9rem;
+            padding: 14px;
+            border-bottom: 2px solid var(--border-black);
+            border-right: 1px solid var(--border-gray);
+            font-size: 0.92rem;
             text-align: center;
             font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-weight: 600;
         }
 
         .tvl-table td:first-child {
@@ -453,8 +410,20 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
+        .tvl-table td:last-child {
+            border-right: none;
+        }
+
         .tvl-table tbody tr:nth-child(even) {
             background-color: var(--accent-gray);
+        }
+
+        .tvl-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tvl-table h4 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         .tvl-type {
@@ -464,9 +433,9 @@
 
         .tvl-boost {
             display: inline-block;
-            padding: 4px 8px;
+            padding: 5px 10px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             font-weight: 600;
             margin-left: 8px;
         }
@@ -504,7 +473,219 @@
             font-style: italic;
         }
 
-        @media (max-width: 600px) {
+        /* Market Cards */
+        .market-card {
+            padding: 20px 28px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            border: 3px solid var(--border-black);
+            background: var(--primary-white);
+        }
+
+        .market-card-oct23 {
+            border-left: 8px solid var(--info-blue);
+        }
+
+        .market-card-dec11 {
+            border-left: 8px solid var(--success-green);
+        }
+
+        .market-card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            min-width: 220px;
+        }
+
+        .market-card-title-oct23 {
+            font-weight: 700;
+            color: var(--info-blue);
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .market-card-title-dec11 {
+            font-weight: 700;
+            color: var(--success-green);
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .market-card-subtitle {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .market-card-stats {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .market-stat {
+            text-align: center;
+        }
+
+        .market-stat-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .market-stat-value-oct23 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-black);
+        }
+
+        .market-stat-value-dec11 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-black);
+        }
+
+        .market-stat-value-secondary-oct23 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--info-blue);
+        }
+
+        .market-stat-value-secondary-dec11 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--success-green);
+        }
+
+        /* Info boxes */
+        .info-box {
+            padding: 20px 24px;
+            margin-bottom: 32px;
+            border: 3px solid var(--border-black);
+            background: var(--accent-gray);
+        }
+
+        .info-box-blue {
+            border-left: 8px solid var(--info-blue);
+        }
+
+        .info-box-text {
+            font-size: 0.95rem;
+            color: var(--primary-black);
+            margin: 0;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* Market Selector and Toggle Buttons */
+        .button-group {
+            display: flex;
+            gap: 0;
+            margin-bottom: 32px;
+            border: 3px solid var(--border-black);
+        }
+
+        .selector-btn {
+            flex: 1;
+            padding: 18px 20px;
+            border: none;
+            border-right: 2px solid var(--border-black);
+            background: var(--primary-white);
+            color: var(--primary-black);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .selector-btn:last-child {
+            border-right: none;
+        }
+
+        .selector-btn:focus {
+            outline: none;
+        }
+
+        .selector-btn.oct23-active {
+            background: var(--info-blue);
+            color: var(--primary-white);
+        }
+
+        .selector-btn.dec11-active {
+            background: var(--success-green);
+            color: var(--primary-white);
+        }
+
+        .selector-btn.toggle-active {
+            background: var(--primary-black);
+            color: var(--primary-white);
+        }
+
+        .section-title {
+            display: block;
+            margin-bottom: 16px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: var(--primary-black);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .error {
+            background-color: #fee2e2;
+            border: 3px solid var(--warning-red);
+            border-left: 8px solid var(--warning-red);
+            color: var(--warning-red);
+            padding: 16px 20px;
+            margin-top: 24px;
+            font-weight: 600;
+        }
+
+        /* Download Button */
+        .download-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--primary-black);
+            color: var(--primary-white);
+            border: 2px solid var(--border-black);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        .download-btn:hover {
+            background: var(--primary-white);
+            color: var(--primary-black);
+        }
+
+        .download-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .download-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
             .container {
                 margin-top: 20px;
                 border-radius: 12px;
@@ -519,12 +700,35 @@
             }
             
             h1 {
-                font-size: 2.25rem;
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
             }
             
-            .market-info {
-                flex-direction: column;
+            .market-card {
+                padding: 16px 20px;
+            }
+
+            .market-card-stats {
                 gap: 20px;
+                width: 100%;
+            }
+
+            .market-stat {
+                flex: 1;
+                min-width: 80px;
+            }
+
+            .market-stat-value-oct23,
+            .market-stat-value-dec11 {
+                font-size: 1.1rem;
+            }
+
+            .market-stat-value-secondary-oct23,
+            .market-stat-value-secondary-dec11 {
+                font-size: 1rem;
             }
             
             .info-item {
@@ -533,35 +737,34 @@
             
             .almanak-table th,
             .almanak-table td {
-                padding: 8px 10px;
+                padding: 12px 16px;
                 font-size: 0.9rem;
             }
             
             .tvl-table {
                 min-width: 100%;
-                font-size: 0.7rem;
             }
             
             .tvl-table th,
             .tvl-table td {
-                padding: 6px 4px;
-                font-size: 0.7rem;
+                padding: 10px 8px;
+                font-size: 0.8rem;
             }
             
             .tvl-boost {
                 display: block;
                 margin-left: 0;
                 margin-top: 4px;
-                font-size: 0.65rem;
-                padding: 2px 4px;
+                font-size: 0.7rem;
+                padding: 3px 6px;
             }
             
             .tvl-breakdown h3 {
-                font-size: 1rem;
+                font-size: 1.1rem;
             }
             
             .tvl-breakdown p {
-                font-size: 0.75rem;
+                font-size: 0.85rem;
             }
             
             .tvl-table-container {
@@ -571,6 +774,48 @@
             
             .info-value {
                 font-size: 1.25rem;
+            }
+
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .result-value {
+                text-align: left;
+            }
+
+            .selector-btn {
+                font-size: 0.9rem;
+                padding: 16px 14px;
+            }
+
+            .section-title {
+                font-size: 1rem;
+            }
+
+            .button-group {
+                margin-bottom: 24px;
+            }
+
+            .results {
+                padding: 24px;
+            }
+
+            .result-section h3 {
+                font-size: 1.15rem;
+            }
+
+            .download-btn {
+                font-size: 0.75rem;
+                padding: 8px 12px;
+                gap: 6px;
+            }
+
+            .download-btn svg {
+                width: 16px;
+                height: 16px;
             }
         }
     </style>
@@ -583,88 +828,87 @@
         </div>
         
         <div class="content">
-            <!-- Dual Market Info Section - Slim Rows -->
-            <div style="margin-bottom: 24px;">
-                <!-- October 23 Market Row -->
-                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #3b82f6; padding: 14px 20px; margin-bottom: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-                    <div style="display: flex; align-items: center; gap: 12px; min-width: 200px;">
-                        <span style="font-size: 1.25rem;">📅</span>
+            <!-- Dual Market Info Section -->
+            <div style="margin-bottom: 32px;">
+                 <!-- October 23 Market Card -->
+                 <div class="market-card market-card-oct23">
+                     <div class="market-card-header">
                         <div>
-                            <div style="font-weight: 700; color: #1e40af; font-size: 0.95rem;">October 23, 2025</div>
-                            <div style="font-size: 0.75rem; color: #6b7280;">Market</div>
+                             <div class="market-card-title-oct23">October 23, 2025</div>
+                             <div class="market-card-subtitle">Market</div>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Days Left</div>
-                            <div id="countdownOct23" style="font-size: 1.25rem; font-weight: 700; color: #1e40af;">Loading...</div>
+                    <div class="market-card-stats">
+                        <div class="market-stat">
+                            <div class="market-stat-label">Days Left</div>
+                            <div id="countdownOct23" class="market-stat-value-oct23">Loading...</div>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Underlying APY</div>
-                            <div id="underlyingApyOct23" style="font-size: 1.1rem; font-weight: 700; color: #1e40af;">Loading...</div>
+                        <div class="market-stat">
+                            <div class="market-stat-label">Underlying APY</div>
+                            <div id="underlyingApyOct23" class="market-stat-value-secondary-oct23">Loading...</div>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Implied APY</div>
-                            <div id="impliedApyOct23" style="font-size: 1.1rem; font-weight: 700; color: #1e40af;">Loading...</div>
+                        <div class="market-stat">
+                            <div class="market-stat-label">Implied APY</div>
+                            <div id="impliedApyOct23" class="market-stat-value-secondary-oct23">Loading...</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- December 11 Market Row -->
-                <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-left: 4px solid #10b981; padding: 14px 20px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-                    <div style="display: flex; align-items: center; gap: 12px; min-width: 200px;">
-                        <span style="font-size: 1.25rem;">📅</span>
+                 <!-- December 11 Market Card -->
+                 <div class="market-card market-card-dec11">
+                     <div class="market-card-header">
                         <div>
-                            <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">December 11, 2025</div>
-                            <div style="font-size: 0.75rem; color: #6b7280;">Market</div>
+                             <div class="market-card-title-dec11">December 11, 2025</div>
+                             <div class="market-card-subtitle">Market</div>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Days Left</div>
-                            <div id="countdownDec11" style="font-size: 1.25rem; font-weight: 700; color: #065f46;">Loading...</div>
+                    <div class="market-card-stats">
+                        <div class="market-stat">
+                            <div class="market-stat-label">Days Left</div>
+                            <div id="countdownDec11" class="market-stat-value-dec11">Loading...</div>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Underlying APY</div>
-                            <div id="underlyingApyDec11" style="font-size: 1.1rem; font-weight: 700; color: #065f46;">Loading...</div>
+                        <div class="market-stat">
+                            <div class="market-stat-label">Underlying APY</div>
+                            <div id="underlyingApyDec11" class="market-stat-value-secondary-dec11">Loading...</div>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Implied APY</div>
-                            <div id="impliedApyDec11" style="font-size: 1.1rem; font-weight: 700; color: #065f46;">Loading...</div>
+                        <div class="market-stat">
+                            <div class="market-stat-label">Implied APY</div>
+                            <div id="impliedApyDec11" class="market-stat-value-secondary-dec11">Loading...</div>
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- Pendle API Data Source Note -->
-            <div style="background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%); border: 1px solid #93c5fd; border-radius: 12px; padding: 16px 20px; margin-bottom: 32px; box-shadow: var(--shadow);">
-                <p style="font-size: 0.9rem; color: #1e40af; margin: 0; text-align: center;">
-                    <strong>📊 Real-Time Data:</strong> All APY rates and market information are sourced directly from the official Pendle Finance API, ensuring accurate and up-to-date calculations for your investment decisions.
+             <div class="info-box info-box-blue">
+                 <p class="info-box-text">
+                     <strong>REAL-TIME DATA:</strong> All APY rates and market information are sourced directly from the official Pendle Finance API, ensuring accurate and up-to-date calculations for your investment decisions.
                 </p>
             </div>
             
             <!-- TVL Breakdown Section -->
             <div class="tvl-breakdown">
-                <h3>📊 Points Distribution (333,333 total daily points)</h3>
+                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                     <h3 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">POINTS DISTRIBUTION (333,333 TOTAL DAILY POINTS)</h3>
+                     <button id="downloadTvlBtn" class="download-btn" title="Download as PNG">
+                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                             <polyline points="7 10 12 15 17 10"></polyline>
+                             <line x1="12" y1="15" x2="12" y2="3"></line>
+                         </svg>
+                         SAVE PNG
+                     </button>
+                 </div>
+                 <div style="border-bottom: 3px solid var(--border-black); margin-bottom: 16px;"></div>
                 <p>Pro-rata distribution based on weighted TVL. Higher boost = more points share. <strong>Note: PT holders get 0 points!</strong> <strong style="color: #dc2626;">Pendle takes 5% fee from YT points only.</strong></p>
                 <p style="font-size: 0.85em; color: #6c757d; margin-top: 8px;">
                     <strong>Breakdown:</strong> 316,666 points for TVL positions (95%) + 16,667 for referrals (5%). From YT allocation, Pendle keeps 5% as protocol fee.
                 </p>
                 <p style="font-size: 0.85em; color: #f59e0b; margin-top: 8px; font-style: italic;">
-                    ⚠️ Rough estimate. Actual allocation may vary.
+                     WARNING: Rough estimate. Actual allocation may vary.
                 </p>
-                <div class="tvl-table-container">
+                 <div class="tvl-table-container" id="tvlTableContainer">
                     <table class="tvl-table">
-                        <thead>
-                            <tr>
-                                <th>TVL Type</th>
-                                <th>TVL Amount</th>
-                                <th>Boost</th>
-                                <th>Weighted TVL</th>
-                                <th>Daily Points</th>
-                                <th>Share %</th>
-                            </tr>
-                        </thead>
                         <tbody id="tvlTableBody">
                             <tr>
                                 <td colspan="6" class="loading-text">Loading TVL data...</td>
@@ -672,30 +916,31 @@
                         </tbody>
                     </table>
                 </div>
+                 
+                 <!-- Hidden container for download (points distribution only) -->
+                 <div id="tvlDownloadContainer" style="position: absolute; left: -9999px; top: -9999px;"></div>
             </div>
             
             <!-- Market Selector -->
-            <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 12px; font-weight: 600; font-size: 1rem; color: var(--primary-black);">
-                    📊 Select Market:
-                </label>
-                <div style="display: flex; gap: 12px; background: var(--accent-gray); padding: 8px; border-radius: 12px;">
-                    <button class="market-selector-btn active" id="marketOct23Btn" style="flex: 1; padding: 16px; border: 2px solid #3b82f6; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: #1e40af; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: var(--transition);">
-                        📅 October 23, 2025
+             <div style="margin-bottom: 32px;">
+                 <span class="section-title">SELECT MARKET:</span>
+                 <div class="button-group">
+                     <button class="selector-btn oct23-active" id="marketOct23Btn">
+                         OCTOBER 23, 2025
                     </button>
-                    <button class="market-selector-btn" id="marketDec11Btn" style="flex: 1; padding: 16px; border: 2px solid var(--border-gray); background: white; color: var(--primary-black); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: var(--transition);">
-                        📅 December 11, 2025
+                     <button class="selector-btn" id="marketDec11Btn">
+                         DECEMBER 11, 2025
                     </button>
                 </div>
             </div>
             
             <!-- Trade Type Toggle -->
-            <div style="display: flex; gap: 12px; margin-bottom: 32px; background: var(--accent-gray); padding: 8px; border-radius: 12px;">
-                <button class="toggle-btn active" id="newTradeBtn" style="flex: 1; padding: 14px; border: 2px solid var(--primary-black); background: var(--primary-black); color: white; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: var(--transition);">
-                    🆕 New Trade
+             <div class="button-group">
+                 <button class="selector-btn toggle-active" id="newTradeBtn">
+                     NEW TRADE
                 </button>
-                <button class="toggle-btn" id="existingYtBtn" style="flex: 1; padding: 14px; border: 2px solid var(--border-gray); background: white; color: var(--primary-black); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: var(--transition);">
-                    💼 Existing YT Holder
+                 <button class="selector-btn" id="existingYtBtn">
+                     EXISTING YT HOLDER
                 </button>
             </div>
 
@@ -711,9 +956,9 @@
 
             <!-- Existing YT Holder Section -->
             <div id="existingYtSection" style="display: none;">
-                <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #93c5fd; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;">
-                    <p style="font-size: 0.9rem; color: #1e40af; margin: 0;">
-                        <strong>💡 For Existing YT Holders:</strong> Enter your current YT holdings and what you paid for them to see your expected points and ROI at different Almanak FDV scenarios.
+                 <div class="info-box info-box-blue" style="margin-bottom: 24px;">
+                     <p class="info-box-text">
+                         <strong>FOR EXISTING YT HOLDERS:</strong> Enter your current YT holdings and what you paid for them to see your expected points and ROI at different Almanak FDV scenarios.
                     </p>
                 </div>
                 
@@ -780,14 +1025,25 @@
                 </div>
                 
                 <div class="result-section almanak-section">
-                    <h3>Almanak Points ROI Scenarios</h3>
+                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                         <h3 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Almanak Points ROI Scenarios</h3>
+                         <button id="downloadAlmanakBtn" class="download-btn" title="Download as PNG">
+                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                 <polyline points="7 10 12 15 17 10"></polyline>
+                                 <line x1="12" y1="15" x2="12" y2="3"></line>
+                             </svg>
+                             SAVE PNG
+                         </button>
+                     </div>
+                     <div style="border-bottom: 3px solid var(--border-black); margin-bottom: 20px;"></div>
                     <p style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-gray);">
                         316,666 daily points (95% of 333,333) distributed pro-rata with boosts: YT 5x, LP 1.25x, Other 1x. <strong style="color: #dc2626;">Pendle takes 5% fee from YT points.</strong> Earnings include underlying yield + NET points value (after Pendle fee). Breakeven shows when you recover your investment.
                     </p>
                     <p style="font-size: 0.85em; color: #f59e0b; margin-bottom: 16px; font-style: italic;">
-                        ⚠️ Rough estimate: 5% reserved for referrals. Actual points may vary based on final allocation.
+                         WARNING: Rough estimate - 5% reserved for referrals. Actual points may vary based on final allocation.
                     </p>
-                    <div class="table-container">
+                     <div class="table-container" id="almanakTableContainer">
                         <table class="almanak-table" id="almanakTable">
                             <thead>
                                 <tr>
@@ -803,6 +1059,9 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Hidden container for download (clean version) -->
+                    <div id="almanakDownloadContainer" style="position: absolute; left: -9999px; top: -9999px;"></div>
                 </div>
             </div>
             
@@ -810,6 +1069,8 @@
         </div>
     </div>
 
+    <!-- Load html2canvas library for image export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Load API module first -->
     <script src="api.js?v=20251004-03"></script>
     <!-- Load main application logic -->

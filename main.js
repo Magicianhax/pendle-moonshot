@@ -131,6 +131,9 @@ function initializeApp() {
     // Set up event listeners
     setupEventListeners();
     
+    // Set up download buttons
+    setupDownloadButtons();
+    
     // Initialize market data and countdown
     initializeMarketData();
     
@@ -188,25 +191,15 @@ function setupEventListeners() {
 function switchMarket(market) {
     marketData.selectedMarket = market;
     
-    // Update button styles
+    // Update button styles using CSS classes
     if (market === 'oct23') {
-        elements.marketOct23Btn.classList.add('active');
-        elements.marketDec11Btn.classList.remove('active');
-        elements.marketOct23Btn.style.border = '2px solid #3b82f6';
-        elements.marketOct23Btn.style.background = 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)';
-        elements.marketOct23Btn.style.color = '#1e40af';
-        elements.marketDec11Btn.style.border = '2px solid var(--border-gray)';
-        elements.marketDec11Btn.style.background = 'white';
-        elements.marketDec11Btn.style.color = 'var(--primary-black)';
+        elements.marketOct23Btn.classList.add('oct23-active');
+        elements.marketOct23Btn.classList.remove('dec11-active');
+        elements.marketDec11Btn.classList.remove('oct23-active', 'dec11-active');
     } else {
-        elements.marketDec11Btn.classList.add('active');
-        elements.marketOct23Btn.classList.remove('active');
-        elements.marketDec11Btn.style.border = '2px solid #10b981';
-        elements.marketDec11Btn.style.background = 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';
-        elements.marketDec11Btn.style.color = '#065f46';
-        elements.marketOct23Btn.style.border = '2px solid var(--border-gray)';
-        elements.marketOct23Btn.style.background = 'white';
-        elements.marketOct23Btn.style.color = 'var(--primary-black)';
+        elements.marketDec11Btn.classList.add('dec11-active');
+        elements.marketDec11Btn.classList.remove('oct23-active');
+        elements.marketOct23Btn.classList.remove('oct23-active', 'dec11-active');
     }
     
     console.log(`Switched to ${market === 'oct23' ? 'October 23' : 'December 11'} market`);
@@ -460,6 +453,95 @@ function resetForm() {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 /**
+ * Download table as PNG image
+ * @param {string} elementId - ID of the element to capture
+ * @param {string} filename - Name of the downloaded file
+ */
+async function downloadTableAsPNG(elementId, filename) {
+    const element = document.getElementById(elementId);
+    
+    if (!element) {
+        console.error('Element not found:', elementId);
+        return;
+    }
+
+    try {
+        // Show loading state on button
+        const button = event.target.closest('.download-btn');
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg> GENERATING...';
+        }
+
+        // Use html2canvas to capture the element
+        const canvas = await html2canvas(element, {
+            backgroundColor: '#ffffff',
+            scale: 2, // Higher quality
+            logging: false,
+            useCORS: true,
+            allowTaint: true,
+            windowWidth: element.scrollWidth,
+            windowHeight: element.scrollHeight
+        });
+
+        // Convert canvas to blob
+        canvas.toBlob(function(blob) {
+            // Create download link
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            // Reset button
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> SAVE PNG';
+            }
+        }, 'image/png');
+
+    } catch (error) {
+        console.error('Error generating image:', error);
+        alert('Failed to generate image. Please try again.');
+        
+        // Reset button on error
+        const button = event.target.closest('.download-btn');
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> SAVE PNG';
+        }
+    }
+}
+
+/**
+ * Setup download button event listeners
+ */
+function setupDownloadButtons() {
+    // Download Almanak table button (clean version)
+    const downloadAlmanakBtn = document.getElementById('downloadAlmanakBtn');
+    if (downloadAlmanakBtn) {
+        downloadAlmanakBtn.addEventListener('click', function() {
+            const timestamp = new Date().toISOString().split('T')[0];
+            downloadTableAsPNG('almanakDownloadContainer', `pendle-almanak-roi-scenarios-${timestamp}.png`);
+        });
+    }
+
+    // Download TVL table button (only points distribution, not TVL sources)
+    const downloadTvlBtn = document.getElementById('downloadTvlBtn');
+    if (downloadTvlBtn) {
+        downloadTvlBtn.addEventListener('click', function() {
+            const timestamp = new Date().toISOString().split('T')[0];
+            downloadTableAsPNG('tvlDownloadContainer', `pendle-points-distribution-${timestamp}.png`);
+        });
+    }
+
+    console.log('✅ Download buttons initialized');
+}
+
+/**
  * Initialize market data and countdown
  */
 async function initializeMarketData() {
@@ -678,13 +760,12 @@ function displayTvlBreakdown() {
     const ytPendleFee = ytDailyPoints * 0.05;
     const ytNetPoints = ytDailyPoints * 0.95;
     
-    const tableHTML = `
+    // Overall TVL Sources HTML (separate from points distribution)
+    const tvlSourcesHTML = `
         <!-- Overall TVL Sources Section -->
-        <tr style="background-color: #f0f9ff; border-bottom: 2px solid #0284c7;">
-            <td colspan="6" style="padding: 12px 16px;">
-                <strong style="font-size: 1.05rem;">📈 Overall TVL Sources</strong>
-            </td>
-        </tr>
+        <tr><td colspan="6" style="padding: 0; border: none;">
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 0 0 12px 0; padding: 12px 16px; background: #000; color: #fff; text-transform: uppercase; letter-spacing: 0.1em;">OVERALL TVL SOURCES</h4>
+        </td></tr>
         <tr style="background-color: #f8fafc;">
             <td colspan="2"><span class="tvl-type">alUSD Supply (${formatNumber(tvlData.alUsdSupply)} × $${liveAlUsdPrice.toFixed(6)})</span></td>
             <td colspan="4"><strong>${formatCurrency(tvlData.alUsdSupply * liveAlUsdPrice)}</strong></td>
@@ -705,21 +786,30 @@ function displayTvlBreakdown() {
             <td colspan="2"><strong>NET TVL (for points)</strong></td>
             <td colspan="4"><strong style="font-size: 1.1rem;">${formatCurrency(tvlData.totalTvl)}</strong></td>
         </tr>
-        
+    `;
+    
+    // Points Distribution HTML (this is what gets downloaded)
+    const pointsDistributionHTML = `
         <!-- Points Distribution Section -->
-        <tr style="background-color: #f0f9ff; border-bottom: 2px solid #0284c7;">
-            <td colspan="6" style="padding: 12px 16px; padding-top: 20px;">
-                <strong style="font-size: 1.05rem;">🎯 Pendle Markets Points Distribution</strong>
-            </td>
+        <tr><td colspan="6" style="padding: 0; border: none;">
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 24px 0 12px 0; padding: 12px 16px; background: #000; color: #fff; text-transform: uppercase; letter-spacing: 0.1em;">PENDLE MARKETS POINTS DISTRIBUTION</h4>
+        </td></tr>
+        <tr style="background: #000; color: white;">
+            <th style="padding: 16px 14px; text-align: left; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">TVL Type</th>
+            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">TVL Amount</th>
+            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">Boost</th>
+            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">Weighted TVL</th>
+            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">Daily Points</th>
+            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 3px solid #000;">Share %</th>
         </tr>
         
         <!-- October 23 Market -->
-        <tr style="background-color: ${weighted.oct23.isMatured ? '#fef3c7' : '#eff6ff'}; border-top: 2px solid ${weighted.oct23.isMatured ? '#f59e0b' : '#3b82f6'};">
+        <tr style="background-color: ${weighted.oct23.isMatured ? '#fee2e2' : '#e0f2fe'}; border-top: 3px solid #000; border-bottom: 2px solid #000;">
             <td colspan="6" style="padding: 10px 16px;">
-                <strong style="font-size: 0.95rem; color: ${weighted.oct23.isMatured ? '#92400e' : '#1e40af'};">
-                    📅 October 23, 2025 Market ${weighted.oct23.isMatured ? '⚠️ MATURED' : ''}
+                <strong style="font-size: 0.95rem; color: ${weighted.oct23.isMatured ? '#dc2626' : '#2563eb'}; text-transform: uppercase; letter-spacing: 0.05em;">
+                    OCTOBER 23, 2025 MARKET ${weighted.oct23.isMatured ? '[MATURED]' : ''}
                 </strong>
-                ${weighted.oct23.isMatured ? '<div style="font-size: 0.8rem; color: #92400e; margin-top: 4px;">⚠️ Market has matured. No points earned. Please migrate to active markets.</div>' : ''}
+                ${weighted.oct23.isMatured ? '<div style="font-size: 0.8rem; color: #dc2626; margin-top: 4px; font-weight: 600;">WARNING: Market has matured. No points earned. Please migrate to active markets.</div>' : ''}
             </td>
         </tr>
         <tr style="background-color: #f9fafb; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
@@ -764,12 +854,12 @@ function displayTvlBreakdown() {
         </tr>
         
         <!-- December 11 Market -->
-        <tr style="background-color: ${weighted.dec11.isMatured ? '#fef3c7' : '#f0fdf4'}; border-top: 2px solid ${weighted.dec11.isMatured ? '#f59e0b' : '#10b981'};">
+        <tr style="background-color: ${weighted.dec11.isMatured ? '#fee2e2' : '#dcfce7'}; border-top: 3px solid #000; border-bottom: 2px solid #000;">
             <td colspan="6" style="padding: 10px 16px;">
-                <strong style="font-size: 0.95rem; color: ${weighted.dec11.isMatured ? '#92400e' : '#065f46'};">
-                    📅 December 11, 2025 Market ${weighted.dec11.isMatured ? '⚠️ MATURED' : ''}
+                <strong style="font-size: 0.95rem; color: ${weighted.dec11.isMatured ? '#dc2626' : '#059669'}; text-transform: uppercase; letter-spacing: 0.05em;">
+                    DECEMBER 11, 2025 MARKET ${weighted.dec11.isMatured ? '[MATURED]' : ''}
                 </strong>
-                ${weighted.dec11.isMatured ? '<div style="font-size: 0.8rem; color: #92400e; margin-top: 4px;">⚠️ Market has matured. No points earned. Please migrate to active markets.</div>' : ''}
+                ${weighted.dec11.isMatured ? '<div style="font-size: 0.8rem; color: #dc2626; margin-top: 4px; font-weight: 600;">WARNING: Market has matured. No points earned. Please migrate to active markets.</div>' : ''}
             </td>
         </tr>
         <tr style="background-color: #f9fafb; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
@@ -814,11 +904,9 @@ function displayTvlBreakdown() {
         </tr>
         
         <!-- Combined YT Summary -->
-        <tr style="background-color: #fef3c7; border-top: 2px solid #f59e0b;">
-            <td colspan="6" style="padding: 10px 16px;">
-                <strong style="font-size: 0.9rem; color: #92400e;">📊 Combined YT Summary</strong>
-            </td>
-        </tr>
+        <tr><td colspan="6" style="padding: 0; border: none;">
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 24px 0 12px 0; padding: 12px 16px; background: #f59e0b; color: #000; text-transform: uppercase; letter-spacing: 0.1em;">COMBINED YT SUMMARY</h4>
+        </td></tr>
         <tr style="background-color: #fffbeb;">
             <td style="padding-left: 20px;"><span class="tvl-type">Total YT (Both Markets)</span></td>
             <td>${formatCurrency(weighted.ytTvl)}</td>
@@ -853,11 +941,9 @@ function displayTvlBreakdown() {
         </tr>
         
         <!-- Shared Categories -->
-        <tr style="background-color: #f3f4f6; border-top: 2px solid #6b7280;">
-            <td colspan="6" style="padding: 10px 16px;">
-                <strong style="font-size: 0.9rem; color: #374151;">🌐 Shared Categories</strong>
-            </td>
-        </tr>
+        <tr><td colspan="6" style="padding: 0; border: none;">
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 24px 0 12px 0; padding: 12px 16px; background: #6b7280; color: #fff; text-transform: uppercase; letter-spacing: 0.1em;">SHARED CATEGORIES</h4>
+        </td></tr>
         <tr>
             <td><span class="tvl-type">Curve Pool</span><span class="tvl-boost" style="background-color: #fef3c7; color: #92400e;">3x Boost</span></td>
             <td>${formatCurrency(weighted.curveTvl)}</td>
@@ -908,7 +994,22 @@ function displayTvlBreakdown() {
         </tr>
     `;
     
-    elements.tvlTableBody.innerHTML = tableHTML;
+    // Combine both sections for the main table
+    const fullTableHTML = tvlSourcesHTML + pointsDistributionHTML;
+    elements.tvlTableBody.innerHTML = fullTableHTML;
+    
+    // Create a separate table for download (points distribution only)
+    const downloadContainer = document.getElementById('tvlDownloadContainer');
+    if (downloadContainer) {
+        downloadContainer.innerHTML = `
+            <div style="background: #fff; padding: 32px; border: 3px solid #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
+                <h3 style="font-size: 1.4rem; font-weight: 700; margin: 0 0 24px 0; color: #000; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 3px solid #000; padding-bottom: 16px;">PENDLE MARKETS POINTS DISTRIBUTION</h3>
+                <table style="width: 100%; border-collapse: collapse; background-color: #fff; border: 2px solid #000;">
+                    <tbody>${pointsDistributionHTML}</tbody>
+                </table>
+            </div>
+        `;
+    }
 }
 
 /**
@@ -1088,6 +1189,96 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity, initialInvestment = n
         
         elements.almanakTableBody.innerHTML = finalHTML;
         
+        // Create a clean version for download (without emoji, cleaner styling)
+        const downloadContainer = document.getElementById('almanakDownloadContainer');
+        if (downloadContainer) {
+            const cleanBreakevenRow = breakevenFdv && breakevenFdv > 0 ? `
+                <tr style="background-color: #dbeafe; border: 3px solid #000;">
+                    <td style="color: #1e40af; font-weight: 700; padding: 8px 10px; text-align: center; border: 1px solid #000;">${formatFdv(breakevenFdv)}</td>
+                    <td style="color: #1e40af; font-weight: 700; padding: 8px 10px; text-align: center; border: 1px solid #000;">~0.00%</td>
+                    <td style="color: #1e40af; font-weight: 600; padding: 8px 10px; text-align: center; border: 1px solid #000;">
+                        $${initialInvestment.toFixed(2)}
+                        <div style="font-size: 0.7em; color: #6c757d; font-weight: normal;">($${totalUnderlyingYield.toFixed(2)} yield)</div>
+                    </td>
+                    <td style="font-weight: 600; color: #1e40af; padding: 8px 10px; text-align: center; border: 1px solid #000;">${daysToMaturity} days</td>
+                    <td style="color: #1e40af; font-weight: 700; padding: 8px 10px; text-align: center; border: 1px solid #000; text-transform: uppercase;">
+                        BREAKEVEN FDV
+                    </td>
+                </tr>
+            ` : '';
+            
+            const cleanTableRows = filteredScenarios.map(scenario => {
+                const roiColor = scenario.isProfit ? '#10b981' : '#dc2626';
+                let breakevenColor = '#6c757d';
+                if (scenario.breakevenStatus === 'No breakeven') {
+                    breakevenColor = '#dc2626';
+                } else if (scenario.breakevenDays <= daysToMaturity) {
+                    breakevenColor = '#10b981';
+                } else {
+                    breakevenColor = '#f59e0b';
+                }
+                
+                const yieldFormatted = `$${scenario.underlyingYieldValue.toFixed(2)}`;
+                const pendleFeeFormatted = `$${scenario.pendleFeeUsdValue.toFixed(2)}`;
+                
+                return `
+                    <tr style="border: 1px solid #000;">
+                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; font-size: 0.95rem; color: #f59e0b; border: 1px solid #000;">${formatFdv(scenario.fdv)}</td>
+                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; font-size: 0.95rem; color: ${roiColor}; border: 1px solid #000;">${scenario.roiPercentage}%</td>
+                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; font-size: 0.95rem; border: 1px solid #000;">
+                            ${scenario.earningsFormatted}
+                            <div style="font-size: 0.7em; color: #6c757d; font-weight: normal; margin-top: 2px;">
+                                ${yieldFormatted} yield<br>
+                                <span style="color: #dc2626;">-${pendleFeeFormatted} Pendle fee (5%)</span>
+                            </div>
+                        </td>
+                        <td style="padding: 8px 10px; text-align: center; font-weight: 600; border: 1px solid #000;">${daysToMaturity} days</td>
+                        <td style="padding: 8px 10px; text-align: center; color: ${breakevenColor}; font-weight: 600; border: 1px solid #000;">${scenario.breakevenStatus}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Insert breakeven row in the clean version
+            let cleanFinalHTML = cleanTableRows;
+            if (breakevenFdv && breakevenFdv > 0) {
+                const rows = cleanTableRows.split('</tr>');
+                let insertIndex = -1;
+                
+                for (let i = 0; i < filteredScenarios.length; i++) {
+                    if (filteredScenarios[i].fdv >= breakevenFdv) {
+                        insertIndex = i;
+                        break;
+                    }
+                }
+                
+                if (insertIndex >= 0) {
+                    const rowsArray = rows.slice(0, -1);
+                    rowsArray.splice(insertIndex, 0, cleanBreakevenRow.trim());
+                    cleanFinalHTML = rowsArray.join('</tr>') + '</tr>';
+                } else {
+                    cleanFinalHTML = cleanTableRows + cleanBreakevenRow;
+                }
+            }
+            
+            downloadContainer.innerHTML = `
+                <div style="background: #fff; padding: 20px; border: 3px solid #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
+                    <h3 style="font-size: 1.2rem; font-weight: 700; margin: 0 0 16px 0; color: #000; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 3px solid #000; padding-bottom: 10px;">ALMANAK POINTS ROI SCENARIOS</h3>
+                    <table style="width: 100%; border-collapse: collapse; background-color: #fff; border: 2px solid #000;">
+                        <thead>
+                            <tr style="background: #000; color: white;">
+                                <th style="padding: 10px 12px; text-align: center; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">FDV</th>
+                                <th style="padding: 10px 12px; text-align: center; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">ROI</th>
+                                <th style="padding: 10px 12px; text-align: center; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">Total Earnings</th>
+                                <th style="padding: 10px 12px; text-align: center; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">Days to Maturity</th>
+                                <th style="padding: 10px 12px; text-align: center; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 3px solid #000;">Breakeven</th>
+                            </tr>
+                        </thead>
+                        <tbody>${cleanFinalHTML}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
     } catch (error) {
         console.error('Error displaying Almanak scenarios:', error);
         elements.almanakTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Error loading scenarios</td></tr>';
@@ -1098,14 +1289,8 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity, initialInvestment = n
  * Switch to new trade mode
  */
 function switchToNewTrade() {
-    elements.newTradeBtn.classList.add('active');
-    elements.existingYtBtn.classList.remove('active');
-    elements.newTradeBtn.style.background = 'var(--primary-black)';
-    elements.newTradeBtn.style.color = 'white';
-    elements.newTradeBtn.style.borderColor = 'var(--primary-black)';
-    elements.existingYtBtn.style.background = 'white';
-    elements.existingYtBtn.style.color = 'var(--primary-black)';
-    elements.existingYtBtn.style.borderColor = 'var(--border-gray)';
+    elements.newTradeBtn.classList.add('toggle-active');
+    elements.existingYtBtn.classList.remove('toggle-active');
     
     elements.newTradeSection.style.display = 'block';
     elements.existingYtSection.style.display = 'none';
@@ -1118,14 +1303,8 @@ function switchToNewTrade() {
  * Switch to existing YT holder mode
  */
 function switchToExistingYt() {
-    elements.existingYtBtn.classList.add('active');
-    elements.newTradeBtn.classList.remove('active');
-    elements.existingYtBtn.style.background = 'var(--primary-black)';
-    elements.existingYtBtn.style.color = 'white';
-    elements.existingYtBtn.style.borderColor = 'var(--primary-black)';
-    elements.newTradeBtn.style.background = 'white';
-    elements.newTradeBtn.style.color = 'var(--primary-black)';
-    elements.newTradeBtn.style.borderColor = 'var(--border-gray)';
+    elements.existingYtBtn.classList.add('toggle-active');
+    elements.newTradeBtn.classList.remove('toggle-active');
     
     elements.existingYtSection.style.display = 'block';
     elements.newTradeSection.style.display = 'none';
@@ -1273,5 +1452,6 @@ window.MoonshotCalculator = {
     updateCountdown,
     displayTvlBreakdown,
     switchToNewTrade,
-    switchToExistingYt
+    switchToExistingYt,
+    downloadTableAsPNG
 };

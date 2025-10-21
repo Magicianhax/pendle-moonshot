@@ -267,14 +267,22 @@ function isMarketMatured(marketKey = 'oct23') {
         ? PENDLE_CONFIG.MARKET_DEC11.maturityDate 
         : PENDLE_CONFIG.MARKET_OCT23.maturityDate;
     
+    // Parse maturity date (ISO string in UTC)
     const maturityDate = new Date(maturityDateString);
     
-    // Get UTC dates at start of day (midnight)
-    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const maturityUTC = new Date(Date.UTC(maturityDate.getUTCFullYear(), maturityDate.getUTCMonth(), maturityDate.getUTCDate()));
+    // Compare timestamps directly - market is matured if current time >= maturity time
+    // This ensures that on October 23, 2025 at 00:00:00 UTC, the market is matured
+    const isMatured = now >= maturityDate;
+    
+    console.log('🔍 Maturity Check:', {
+        market: marketKey,
+        now: now.toISOString(),
+        maturityDate: maturityDate.toISOString(),
+        isMatured: isMatured
+    });
     
     // Returns true on the maturity date itself (market has matured, no more points)
-    return todayUTC >= maturityUTC;
+    return isMatured;
 }
 
 /**
@@ -291,7 +299,7 @@ function isMarketMatured(marketKey = 'oct23') {
  * @returns {number} Number of earning days remaining (0 on maturity date)
  */
 function getDaysToMaturity(marketKey = 'oct23') {
-    // Get current UTC date
+    // Get current time
     const now = new Date();
     
     // Get maturity date for the specified market
@@ -299,19 +307,38 @@ function getDaysToMaturity(marketKey = 'oct23') {
         ? PENDLE_CONFIG.MARKET_DEC11.maturityDate 
         : PENDLE_CONFIG.MARKET_OCT23.maturityDate;
     
-    // Parse maturity date (already in UTC)
+    // Parse maturity date (ISO string in UTC)
     const maturityDate = new Date(maturityDateString);
     
-    // Get UTC dates at start of day (midnight)
+    // Get UTC dates at start of day (midnight) for comparison
     const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const maturityUTC = new Date(Date.UTC(maturityDate.getUTCFullYear(), maturityDate.getUTCMonth(), maturityDate.getUTCDate()));
     
-    // Calculate difference in days
-    // This returns 0 on the maturity date itself (no points earned)
-    const timeDiff = maturityUTC.getTime() - todayUTC.getTime();
-    const daysDiff = Math.round(timeDiff / (1000 * 3600 * 24));
+    // If we're on or past the maturity date (same day or later), return 0
+    if (todayUTC >= maturityUTC) {
+        console.log('📅 Days to Maturity: 0 (matured)', {
+            market: marketKey,
+            today: todayUTC.toISOString(),
+            maturityDate: maturityUTC.toISOString()
+        });
+        return 0;
+    }
     
-    return Math.max(0, daysDiff);
+    // Calculate difference in milliseconds
+    const diffMs = maturityUTC - todayUTC;
+    
+    // Convert to days
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    
+    console.log('📅 Days to Maturity:', {
+        market: marketKey,
+        today: todayUTC.toISOString(),
+        maturityDate: maturityUTC.toISOString(),
+        daysRemaining: diffDays
+    });
+    
+    // Return days remaining (always >= 0)
+    return Math.max(0, diffDays);
 }
 
 /**

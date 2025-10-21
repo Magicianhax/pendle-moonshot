@@ -6,6 +6,13 @@ This document explains how the Pendle Moonshot Calculator handles matured market
 ## Implementation Date
 Implemented: October 17, 2025
 
+## Important: Points Stop on Maturity Date
+**For a maturity date of October 23, 2025:**
+- ✅ **Last earning day:** October 22, 2025
+- ❌ **No points earned:** October 23, 2025 (maturity date itself)
+
+The maturity date marks the end of the earning period. Points calculation stops at 00:00 UTC on the maturity date.
+
 ## Key Changes
 
 ### 1. Maturity Detection
@@ -25,6 +32,7 @@ After maturity:
 - **0x boost** for both LP and YT (no points earned)
 - Matured market TVL is **excluded from points calculations**
 - Other active markets continue earning normal points
+- **NEW: Dynamic LP Boost** - When only one market remains active, LP boost increases from 1.25x to 1.5x (see DYNAMIC_LP_BOOST.md)
 
 ### 4. Other TVL Calculation
 Updated formula to avoid double counting:
@@ -63,20 +71,34 @@ Matured markets are displayed with:
 
 ## Example Scenarios
 
-### Before October 23, 2025 (Active)
+### October 21, 2025 (2 Days Before Maturity)
 ```
-📅 October 23, 2025 Market
+📅 October 23, 2025 Market - Active
+Days to Maturity: 2 (Oct 21 + Oct 22)
 YT Oct 23: $3.2M → 5x Boost → 4,638 points/day ✅
 LP Oct 23: $5.0M → 1.25x Boost → 1,250 points/day ✅
 ```
 
-### After October 23, 2025 (Matured)
+### October 22, 2025 (Last Earning Day)
+```
+📅 October 23, 2025 Market - Active (Last Day!)
+Days to Maturity: 1 (Oct 22 only)
+YT Oct 23: $3.2M → 5x Boost → 4,638 points/day ✅
+LP Oct 23: $5.0M → 1.25x Boost → 1,250 points/day ✅
+```
+
+### October 23, 2025 (Maturity Date - No Points)
 ```
 📅 October 23, 2025 Market ⚠️ MATURED
 ⚠️ Market has matured. No points earned. Please migrate to active markets.
+Days to Maturity: 0
 
 YT Oct 23: $0.00 (Locked: $3.2M) → 0x → 0 points/day ❌
 LP Oct 23: $5.0M (Locked) → 0x → 0 points/day ❌
+
+📅 December 11, 2025 Market - ACTIVE (Only market remaining)
+YT Dec 11: $2.8M → 5x Boost → Points earned ✅
+LP Dec 11: $4.0M → 1.5x Boost → Points earned ✅ (BOOSTED from 1.25x!)
 ```
 
 ## Technical Implementation

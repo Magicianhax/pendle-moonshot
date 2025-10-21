@@ -255,8 +255,11 @@ async function getAllMarketsData() {
 
 /**
  * Check if a market has reached maturity
+ * IMPORTANT: A market is considered matured on its maturity date (at 00:00 UTC).
+ * For Oct 23 maturity: On Oct 23 at 00:00 UTC, the market is matured (no points earned).
+ * 
  * @param {string} marketKey - Market key ('oct23' or 'dec11')
- * @returns {boolean} True if market is matured
+ * @returns {boolean} True if market is matured (on or after maturity date)
  */
 function isMarketMatured(marketKey = 'oct23') {
     const now = new Date();
@@ -266,17 +269,26 @@ function isMarketMatured(marketKey = 'oct23') {
     
     const maturityDate = new Date(maturityDateString);
     
-    // Get UTC dates at start of day
+    // Get UTC dates at start of day (midnight)
     const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const maturityUTC = new Date(Date.UTC(maturityDate.getUTCFullYear(), maturityDate.getUTCMonth(), maturityDate.getUTCDate()));
     
+    // Returns true on the maturity date itself (market has matured, no more points)
     return todayUTC >= maturityUTC;
 }
 
 /**
  * Calculate days remaining until maturity using UTC time
+ * IMPORTANT: Points stop being earned on the maturity date itself.
+ * For a maturity date of Oct 23, the last earning day is Oct 22.
+ * 
+ * Example for Oct 23 maturity:
+ * - Oct 21: Returns 2 (earns points for Oct 21 & Oct 22)
+ * - Oct 22: Returns 1 (earns points for Oct 22 only)
+ * - Oct 23: Returns 0 (NO points earned - maturity date)
+ * 
  * @param {string} marketKey - Market key ('oct23' or 'dec11'), defaults to 'oct23'
- * @returns {number} Days remaining
+ * @returns {number} Number of earning days remaining (0 on maturity date)
  */
 function getDaysToMaturity(marketKey = 'oct23') {
     // Get current UTC date
@@ -290,11 +302,12 @@ function getDaysToMaturity(marketKey = 'oct23') {
     // Parse maturity date (already in UTC)
     const maturityDate = new Date(maturityDateString);
     
-    // Get UTC dates at start of day
+    // Get UTC dates at start of day (midnight)
     const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const maturityUTC = new Date(Date.UTC(maturityDate.getUTCFullYear(), maturityDate.getUTCMonth(), maturityDate.getUTCDate()));
     
     // Calculate difference in days
+    // This returns 0 on the maturity date itself (no points earned)
     const timeDiff = maturityUTC.getTime() - todayUTC.getTime();
     const daysDiff = Math.round(timeDiff / (1000 * 3600 * 24));
     
@@ -364,10 +377,11 @@ const ALMANAK_POINTS_CONFIG = {
     totalSupply: 1000000000, // 1B tokens
     fdvScenarios: [90, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000], // FDV scenarios in millions
     boosts: {
-        other: 1,    // 1x points for other TVL
-        yt: 5,       // 5x points for YT tokens
-        lp: 1.25,    // 1.25x points for LP tokens
-        curve: 3     // 3x points for Curve pool
+        other: 1,           // 1x points for other TVL
+        yt: 5,              // 5x points for YT tokens
+        lp: 1.25,           // 1.25x points for LP tokens (when multiple markets active)
+        lpSingleMarket: 1.5, // 1.5x points for LP tokens (when only one market remains active)
+        curve: 3            // 3x points for Curve pool
     },
     // API endpoints
     etherscanApiKey: "NDP4JRZEF2QUCXSQMGNVRUG81KTHEPMCH6",
@@ -594,7 +608,7 @@ async function fetchTvlData() {
  * Calculate weighted TVL for points distribution
  * Apply boost multipliers to each category:
  * - Other: 1x (no boost)
- * - LP: 1.25x (separate for each market, 0x if matured)
+ * - LP: 1.25x (when multiple markets active) or 1.5x (when only one market active)
  * - YT: 5x (separate for each market, 0x if matured)
  * - Curve: 3x
  * Matured markets receive 0x boost (no points)
@@ -606,19 +620,36 @@ function calculateWeightedTvl(tvlData) {
     const isOct23Matured = tvlData.pendleOct23.isMatured || false;
     const isDec11Matured = tvlData.pendleDec11.isMatured || false;
     
+    // Count number of active markets (not matured)
+    const activeMarketsCount = (isOct23Matured ? 0 : 1) + (isDec11Matured ? 0 : 1);
+    
+    // Determine LP boost based on number of active markets
+    // If only 1 market is active (others matured): 1.5x boost
+    // If multiple markets are active: 1.25x boost
+    const lpBoostMultiplier = activeMarketsCount === 1 
+        ? ALMANAK_POINTS_CONFIG.boosts.lpSingleMarket  // 1.5x when only one market active
+        : ALMANAK_POINTS_CONFIG.boosts.lp;             // 1.25x when multiple markets active
+    
+    console.log('🎯 LP Boost Calculation:', {
+        activeMarkets: activeMarketsCount,
+        oct23Matured: isOct23Matured,
+        dec11Matured: isDec11Matured,
+        lpBoostApplied: lpBoostMultiplier + 'x'
+    });
+    
     // Calculate weighted values for October 23 market
     // If matured: 0x boost (no points earned)
     const ytCountOct23 = tvlData.pendleOct23.ytTvl / ALMANAK_POINTS_CONFIG.alUsdPrice;
-    const lpBoostOct23 = isOct23Matured ? 0 : 1.25;  // 0x if matured, 1.25x if active
-    const ytBoostOct23 = isOct23Matured ? 0 : 5;     // 0x if matured, 5x if active
+    const lpBoostOct23 = isOct23Matured ? 0 : lpBoostMultiplier;  // 0x if matured, otherwise dynamic boost
+    const ytBoostOct23 = isOct23Matured ? 0 : 5;                  // 0x if matured, 5x if active
     const weightedLpOct23 = tvlData.pendleOct23.lpTvl * lpBoostOct23;
     const weightedYtOct23 = (ytCountOct23 * ALMANAK_POINTS_CONFIG.alUsdPrice) * ytBoostOct23;
     
     // Calculate weighted values for December 11 market
     // If matured: 0x boost (no points earned)
     const ytCountDec11 = tvlData.pendleDec11.ytTvl / ALMANAK_POINTS_CONFIG.alUsdPrice;
-    const lpBoostDec11 = isDec11Matured ? 0 : 1.25;  // 0x if matured, 1.25x if active
-    const ytBoostDec11 = isDec11Matured ? 0 : 5;     // 0x if matured, 5x if active
+    const lpBoostDec11 = isDec11Matured ? 0 : lpBoostMultiplier;  // 0x if matured, otherwise dynamic boost
+    const ytBoostDec11 = isDec11Matured ? 0 : 5;                  // 0x if matured, 5x if active
     const weightedLpDec11 = tvlData.pendleDec11.lpTvl * lpBoostDec11;
     const weightedYtDec11 = (ytCountDec11 * ALMANAK_POINTS_CONFIG.alUsdPrice) * ytBoostDec11;
     

@@ -30,17 +30,24 @@ async function fetchLiveAlUsdPrice() {
         }
         const data = await response.json();
         
-        // pricePerShare is returned as a string like "1026210" which represents 1.026210
-        // We need to divide by 1,000,000
-        if (data.pricePerShare) {
-            const price = parseFloat(data.pricePerShare) / 1000000;
-            console.log('✅ Live alUSD price from Lagoon:', price);
-            return price;
+        // Lagoon API returns: { vaults: [...], totalCount, hasNextPage }
+        // Find the alUSD vault by address
+        if (data.vaults && Array.isArray(data.vaults)) {
+            const alUsdVault = data.vaults.find(v => 
+                v.address.toLowerCase() === ALMANAK_CONFIG.alUsdToken.toLowerCase()
+            );
+            
+            if (alUsdVault && alUsdVault.state && alUsdVault.state.pricePerShareUsd) {
+                const price = alUsdVault.state.pricePerShareUsd;
+                console.log('✅ Live alUSD price from Lagoon:', price);
+                return price;
+            }
         }
         
-        throw new Error('pricePerShare not found in API response');
+        throw new Error('alUSD vault not found in API response');
     } catch (error) {
         console.error('❌ Failed to fetch live alUSD price:', error);
+        console.error('Error details:', error.message);
         // Return fallback price if API fails
         return ALMANAK_CONFIG.alUsdPrice;
     }
@@ -58,17 +65,24 @@ async function fetchLiveAlpUsdPrice() {
         }
         const data = await response.json();
         
-        // pricePerShare is returned as a string like "1009578" which represents 1.009578
-        // We need to divide by 1,000,000
-        if (data.pricePerShare) {
-            const price = parseFloat(data.pricePerShare) / 1000000;
-            console.log('✅ Live alpUSD price from Lagoon:', price);
-            return price;
+        // Lagoon API returns: { vaults: [...], totalCount, hasNextPage }
+        // Find the alpUSD vault by address
+        if (data.vaults && Array.isArray(data.vaults)) {
+            const alpUsdVault = data.vaults.find(v => 
+                v.address.toLowerCase() === ALMANAK_CONFIG.alpUsdToken.toLowerCase()
+            );
+            
+            if (alpUsdVault && alpUsdVault.state && alpUsdVault.state.pricePerShareUsd) {
+                const price = alpUsdVault.state.pricePerShareUsd;
+                console.log('✅ Live alpUSD price from Lagoon:', price);
+                return price;
+            }
         }
         
-        throw new Error('pricePerShare not found in API response');
+        throw new Error('alpUSD vault not found in API response');
     } catch (error) {
         console.error('❌ Failed to fetch live alpUSD price:', error);
+        console.error('Error details:', error.message);
         // Return fallback price if API fails
         return ALMANAK_CONFIG.alpUsdPrice;
     }

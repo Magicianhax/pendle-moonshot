@@ -747,9 +747,9 @@ function displayTvlBreakdown() {
             <td style="color: #166534;">${((ytDailyPointsOct23 * 0.95 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
         </tr>
         <tr style="background-color: #ffffff; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
-            <td><span class="tvl-type">LP Oct 23</span><span class="tvl-boost ${weighted.oct23.isMatured ? '' : 'boost-1-25x'}" style="${weighted.oct23.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x (Matured)' : '1.25x Boost'}</span></td>
+            <td><span class="tvl-type">LP Oct 23</span><span class="tvl-boost ${weighted.oct23.isMatured ? '' : (weighted.oct23.lpBoost === 1.5 ? 'boost-1-5x' : 'boost-1-25x')}" style="${weighted.oct23.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x (Matured)' : weighted.oct23.lpBoost + 'x Boost'}</span></td>
             <td>${formatCurrency(weighted.oct23.lpTvl)}${weighted.oct23.isMatured && weighted.oct23.lockedLpTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked)</span>' : ''}</td>
-            <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x' : '1.25x'}</td>
+            <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x' : weighted.oct23.lpBoost + 'x'}</td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.oct23.weightedLp)}</td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(lpDailyPointsOct23)}</strong></td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${lpShareOct23.toFixed(2)}%</td>
@@ -797,9 +797,9 @@ function displayTvlBreakdown() {
             <td style="color: #166534;">${((ytDailyPointsDec11 * 0.95 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
         </tr>
         <tr style="background-color: #ffffff; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
-            <td><span class="tvl-type">LP Dec 11</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : 'boost-1-25x'}" style="${weighted.dec11.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : '1.25x Boost'}</span></td>
+            <td><span class="tvl-type">LP Dec 11</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : (weighted.dec11.lpBoost === 1.5 ? 'boost-1-5x' : 'boost-1-25x')}" style="${weighted.dec11.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : weighted.dec11.lpBoost + 'x Boost'}</span></td>
             <td>${formatCurrency(weighted.dec11.lpTvl)}${weighted.dec11.isMatured && weighted.dec11.lockedLpTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked)</span>' : ''}</td>
-            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x' : '1.25x'}</td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x' : weighted.dec11.lpBoost + 'x'}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.dec11.weightedLp)}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(lpDailyPointsDec11)}</strong></td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${lpShareDec11.toFixed(2)}%</td>
@@ -846,7 +846,7 @@ function displayTvlBreakdown() {
         <tr style="background-color: #fffbeb;">
             <td style="padding-left: 20px;"><span class="tvl-type">Total LP (Both Markets)</span></td>
             <td>${formatCurrency(weighted.lpTvl)}</td>
-            <td>1.25x</td>
+            <td>${weighted.oct23.lpBoost || weighted.dec11.lpBoost}x</td>
             <td>${formatCurrency(weighted.weightedLp)}</td>
             <td><strong>${formatNumber(lpDailyPoints)}</strong></td>
             <td>${lpShare.toFixed(2)}%</td>

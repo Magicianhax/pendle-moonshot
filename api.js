@@ -190,10 +190,7 @@ function formatApiResponse(apiResponse) {
  */
 async function getMarketData(marketAddress = PENDLE_CONFIG.MARKET_OCT23.address) {
     try {
-        console.log(`📊 Fetching market data for: ${marketAddress}`);
-        
-        // Use serverless function to avoid CORS issues
-        const response = await fetch(`/api/get-pendle-market?market=${marketAddress}`, {
+        const response = await fetch(`${PENDLE_CONFIG.MARKET_API_URL}/${marketAddress}/data`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json"
@@ -204,15 +201,7 @@ async function getMarketData(marketAddress = PENDLE_CONFIG.MARKET_OCT23.address)
             throw new Error(`Market API Error: ${response.status} - ${response.statusText}`);
         }
 
-        const result = await response.json();
-        
-        if (!result.success || !result.data) {
-            throw new Error(result.error || 'Failed to fetch market data');
-        }
-        
-        const data = result.data;
-        
-        console.log(`✅ Market data loaded: ${marketAddress.slice(0, 10)}... | Underlying APY: ${(data.underlyingApy * 100).toFixed(2)}% | Implied APY: ${(data.impliedApy * 100).toFixed(2)}%`);
+        const data = await response.json();
         
         return {
             success: true,
@@ -231,7 +220,7 @@ async function getMarketData(marketAddress = PENDLE_CONFIG.MARKET_OCT23.address)
         };
 
     } catch (error) {
-        console.error('❌ Market API Error:', error);
+        console.error('Market API Error:', error);
         return {
             success: false,
             error: error.message || 'Failed to fetch market data'
@@ -459,7 +448,7 @@ async function fetchTvlData() {
         
         // Fetch data from backend API FIRST to get live prices
         console.log('🚀 Fetching TVL data from backend API...');
-        const backendResponse = await fetch('/api/get-tvl-data');
+        const backendResponse = await fetch('/.netlify/functions/get-tvl-data');
         const backendData = await backendResponse.json();
         
         if (!backendData.success || !backendData.data) {
@@ -582,7 +571,21 @@ async function fetchTvlData() {
                 const totalPtDec11 = marketResponseDec11.data.totalPt || 0;
                 const totalSyDec11 = marketResponseDec11.data.totalSy || 0;
                 const syPrice = liveAlUsdPrice;  // Use live alUSD price from Lagoon
-                const ptPrice = 1.00;  // PT priced at USDC peg ($1.00)
+                
+                // Fetch USDC price from CoinGecko
+                let usdcPrice = 1.00;  // Default fallback
+                try {
+                    const coingeckoResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=usd');
+                    const coingeckoData = await coingeckoResponse.json();
+                    if (coingeckoData['usd-coin'] && coingeckoData['usd-coin'].usd) {
+                        usdcPrice = coingeckoData['usd-coin'].usd;
+                        console.log('✅ USDC Price from CoinGecko:', usdcPrice);
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Failed to fetch USDC price, using $1.00:', error.message);
+                }
+                
+                const ptPrice = usdcPrice;  // PT priced at USDC price
                 const actualLpTvl = marketResponseDec11.data.liquidity.usd || 0;
                 const actualYtTvl = ytTotalSupplyDec11 * liveAlUsdPrice;
                 
@@ -598,11 +601,11 @@ async function fetchTvlData() {
                     method: 'Using actual PT/SY token amounts from Pendle API',
                     totalPt: totalPtDec11.toFixed(2),
                     totalSy: totalSyDec11.toFixed(2),
-                    syPrice: '$' + syPrice.toFixed(4) + ' (alUSD from Lagoon)',
-                    ptPrice: '$' + ptPrice.toFixed(2) + ' (USDC peg)',
-                    totalLpTvl: '$' + actualLpTvl.toFixed(2),
-                    lpSyPortion: '$' + lpSyPortionUsd.toFixed(2) + ` (${syPercent.toFixed(2)}%)`,
-                    lpPtPortion: '$' + lpPtPortionUsd.toFixed(2) + ` (${ptPercent.toFixed(2)}%)`
+                    syPrice: syPrice.toFixed(6),
+                    ptPrice: ptPrice.toFixed(6),
+                    totalLpTvl: actualLpTvl.toFixed(2),
+                    lpSyPortion: lpSyPortionUsd.toFixed(2) + ` (${syPercent.toFixed(2)}%)`,
+                    lpPtPortion: lpPtPortionUsd.toFixed(2) + ` (${ptPercent.toFixed(2)}%)`
                 });
                 
                 // Store LP breakdown

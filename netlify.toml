@@ -6,15 +6,10 @@
   # No environment variables needed
 
 [[redirects]]
-  # SPA routing - redirect all requests to index.html
-  # BUT don't force - let existing files/functions serve first
+  # SPA routing - redirect all non-file requests to index.html
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
-  
-  # Note: Netlify functions are automatically handled at /.netlify/functions/
-  # No need to add special rules for them
 
 [[headers]]
   # Cache static assets

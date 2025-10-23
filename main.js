@@ -50,7 +50,7 @@ const elements = {
  * Global state for market data
  */
 let marketData = {
-    selectedMarket: 'oct23', // 'oct23' or 'dec11'
+    selectedMarket: 'dec11', // Only December 11 market active
     oct23: {
     underlyingApy: 0,
     impliedApy: 0,
@@ -76,14 +76,14 @@ function initializeApp() {
     elements.resultsDiv = document.getElementById('results');
     elements.errorDiv = document.getElementById('error');
     
-    // Get market selector buttons
-    elements.marketOct23Btn = document.getElementById('marketOct23Btn');
-    elements.marketDec11Btn = document.getElementById('marketDec11Btn');
+    // Market selector buttons removed (only Dec 11 active)
+    // elements.marketOct23Btn = document.getElementById('marketOct23Btn');
+    // elements.marketDec11Btn = document.getElementById('marketDec11Btn');
     
-    // Get October 23 market elements
-    elements.countdownOct23 = document.getElementById('countdownOct23');
-    elements.underlyingApyOct23 = document.getElementById('underlyingApyOct23');
-    elements.impliedApyOct23 = document.getElementById('impliedApyOct23');
+    // October 23 market elements removed (market excluded from points)
+    // elements.countdownOct23 = document.getElementById('countdownOct23');
+    // elements.underlyingApyOct23 = document.getElementById('underlyingApyOct23');
+    // elements.impliedApyOct23 = document.getElementById('impliedApyOct23');
     
     // Get December 11 market elements
     elements.countdownDec11 = document.getElementById('countdownDec11');
@@ -119,11 +119,7 @@ function initializeApp() {
 
     // Verify all elements loaded
     console.log('DOM elements loaded:', {
-        marketOct23Btn: !!elements.marketOct23Btn,
-        marketDec11Btn: !!elements.marketDec11Btn,
         tvlTableBody: !!elements.tvlTableBody,
-        underlyingApyOct23: !!elements.underlyingApyOct23,
-        impliedApyOct23: !!elements.impliedApyOct23,
         underlyingApyDec11: !!elements.underlyingApyDec11,
         impliedApyDec11: !!elements.impliedApyDec11
     });
@@ -137,16 +133,16 @@ function initializeApp() {
     // Initialize market data and countdown
     initializeMarketData();
     
-    console.log('✅ Pendle Moonshot Calculator initialized with dual market support');
+    console.log('✅ Pendle Moonshot Calculator initialized (December 11 market only)');
 }
 
 /**
  * Set up event listeners
  */
 function setupEventListeners() {
-    // Market selector buttons
-    elements.marketOct23Btn.addEventListener('click', () => switchMarket('oct23'));
-    elements.marketDec11Btn.addEventListener('click', () => switchMarket('dec11'));
+    // Market selector buttons removed (only Dec 11 active)
+    // elements.marketOct23Btn.addEventListener('click', () => switchMarket('oct23'));
+    // elements.marketDec11Btn.addEventListener('click', () => switchMarket('dec11'));
     
     // Toggle buttons
     elements.newTradeBtn.addEventListener('click', () => switchToNewTrade());
@@ -553,15 +549,12 @@ async function initializeMarketData() {
         const marketsData = await window.PendleAPI.getAllMarketsData();
         
         if (marketsData.success) {
-            // Update October 23 market data
+            // Update October 23 market data (for backend calculations only)
             if (marketsData.oct23) {
                 marketData.oct23.underlyingApy = marketsData.oct23.underlyingApy;
                 marketData.oct23.impliedApy = marketsData.oct23.impliedApy;
                 marketData.oct23.daysToMaturity = window.PendleAPI.getDaysToMaturity('oct23');
-                
-                elements.underlyingApyOct23.textContent = `${(marketsData.oct23.underlyingApy * 100).toFixed(2)}%`;
-                elements.impliedApyOct23.textContent = `${(marketsData.oct23.impliedApy * 100).toFixed(2)}%`;
-                console.log('✅ October 23 market data loaded');
+                console.log('✅ October 23 market data loaded (backend only)');
             }
             
             // Update December 11 market data
@@ -577,8 +570,6 @@ async function initializeMarketData() {
             
             marketData.lastUpdated = new Date();
         } else {
-            elements.underlyingApyOct23.textContent = 'Error loading';
-            elements.impliedApyOct23.textContent = 'Error loading';
             elements.underlyingApyDec11.textContent = 'Error loading';
             elements.impliedApyDec11.textContent = 'Error loading';
             console.error('Failed to load market data:', marketsData.error);
@@ -598,25 +589,18 @@ async function initializeMarketData() {
         
     } catch (error) {
         console.error('Failed to initialize market data:', error);
-        elements.underlyingApyOct23.textContent = 'Error loading';
         elements.underlyingApyDec11.textContent = 'Error loading';
+        elements.impliedApyDec11.textContent = 'Error loading';
     }
 }
 
 /**
- * Update countdown display for both markets
+ * Update countdown display for December 11 market
  */
 function updateCountdown() {
-    // Update October 23 countdown
+    // Update October 23 data (for backend calculations, not displayed)
     const daysToMaturityOct23 = window.PendleAPI.getDaysToMaturity('oct23');
     marketData.oct23.daysToMaturity = daysToMaturityOct23;
-    
-    if (daysToMaturityOct23 > 0) {
-        const dayTextOct23 = daysToMaturityOct23 === 1 ? 'day' : 'days';
-        elements.countdownOct23.textContent = `${daysToMaturityOct23} ${dayTextOct23}`;
-    } else {
-        elements.countdownOct23.textContent = 'Matured';
-    }
     
     // Update December 11 countdown
     const daysToMaturityDec11 = window.PendleAPI.getDaysToMaturity('dec11');
@@ -631,20 +615,17 @@ function updateCountdown() {
 }
 
 /**
- * Refresh market data for both markets
+ * Refresh market data for December 11 market
  */
 async function refreshMarketData() {
     try {
         const marketsData = await window.PendleAPI.getAllMarketsData();
         
         if (marketsData.success) {
-            // Update October 23 market
+            // Update October 23 market data (for backend calculations only)
             if (marketsData.oct23) {
                 marketData.oct23.underlyingApy = marketsData.oct23.underlyingApy;
                 marketData.oct23.impliedApy = marketsData.oct23.impliedApy;
-                
-                elements.underlyingApyOct23.textContent = `${(marketsData.oct23.underlyingApy * 100).toFixed(2)}%`;
-                elements.impliedApyOct23.textContent = `${(marketsData.oct23.impliedApy * 100).toFixed(2)}%`;
             }
             
             // Update December 11 market
@@ -657,7 +638,7 @@ async function refreshMarketData() {
             }
             
             marketData.lastUpdated = new Date();
-            console.log('Both markets data refreshed');
+            console.log('December 11 market data refreshed');
         }
     } catch (error) {
         console.error('Failed to refresh market data:', error);
@@ -886,13 +867,26 @@ function displayTvlBreakdown() {
             <td style="color: #166534;"><strong>${formatNumber(ytDailyPointsDec11 * 0.95)}</strong> <span style="font-size: 0.8em;">(net)</span></td>
             <td style="color: #166534;">${((ytDailyPointsDec11 * 0.95 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
         </tr>
-        <tr style="background-color: #ffffff; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
-            <td><span class="tvl-type">LP Dec 11</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : (weighted.dec11.lpBoost === 1.5 ? 'boost-1-5x' : 'boost-1-25x')}" style="${weighted.dec11.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : weighted.dec11.lpBoost + 'x Boost'}</span></td>
+        <tr style="background-color: #e0f2fe; font-weight: 600; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+            <td><span class="tvl-type">LP Dec 11 (Total)</span></td>
             <td>${formatCurrency(weighted.dec11.lpTvl)}${weighted.dec11.isMatured && weighted.dec11.lockedLpTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked)</span>' : ''}</td>
-            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x' : weighted.dec11.lpBoost + 'x'}</td>
-            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.dec11.weightedLp)}</td>
+            <td colspan="4" style="text-align: center; font-style: italic; color: #6c757d;">Split into SY and PT portions below</td>
+        </tr>
+        <tr style="background-color: #ffffff; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+            <td style="padding-left: 20px;"><span class="tvl-type">├─ LP SY (alUSD)</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : 'boost-1-5x'}" style="${weighted.dec11.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : '1.5x Boost'}</span></td>
+            <td>${formatCurrency((weighted.dec11.lpSyTvl !== undefined && weighted.dec11.lpSyTvl !== null) ? weighted.dec11.lpSyTvl : 0)}</td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x' : '1.5x'}</td>
+            <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.dec11.weightedLp || 0)}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(lpDailyPointsDec11)}</strong></td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${lpShareDec11.toFixed(2)}%</td>
+        </tr>
+        <tr style="opacity: 0.6; background-color: #fee2e2;">
+            <td style="padding-left: 20px;"><span class="tvl-type">└─ LP PT (alUSD)</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
+            <td><strong>${formatCurrency((weighted.dec11.lpPtTvl !== undefined && weighted.dec11.lpPtTvl !== null) ? weighted.dec11.lpPtTvl : 0)}</strong></td>
+            <td style="color: #991b1b;"><strong>0x</strong></td>
+            <td style="color: #991b1b;"><strong>${formatCurrency(0)}</strong></td>
+            <td style="color: #991b1b;"><strong>0</strong></td>
+            <td style="color: #991b1b;"><strong>0%</strong></td>
         </tr>
         <tr style="opacity: 0.6; background-color: #fee2e2;">
             <td><span class="tvl-type">PT Dec 11</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
@@ -901,43 +895,6 @@ function displayTvlBreakdown() {
             <td style="color: #991b1b;"><strong>${formatCurrency(0)}</strong></td>
             <td style="color: #991b1b;"><strong>0</strong></td>
             <td style="color: #991b1b;"><strong>0%</strong></td>
-        </tr>
-        
-        <!-- Combined YT Summary -->
-        <tr><td colspan="6" style="padding: 0; border: none;">
-            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 24px 0 12px 0; padding: 12px 16px; background: #f59e0b; color: #000; text-transform: uppercase; letter-spacing: 0.1em;">COMBINED YT SUMMARY</h4>
-        </td></tr>
-        <tr style="background-color: #fffbeb;">
-            <td style="padding-left: 20px;"><span class="tvl-type">Total YT (Both Markets)</span></td>
-            <td>${formatCurrency(weighted.ytTvl)}</td>
-            <td>5x</td>
-            <td>${formatCurrency(weighted.weightedYt)}</td>
-            <td><strong>${formatNumber(ytDailyPoints)}</strong> <span style="font-size: 0.8em; color: #6c757d;">(gross)</span></td>
-            <td>${ytShare.toFixed(2)}%</td>
-        </tr>
-        <tr style="background-color: #fee2e2;">
-            <td style="padding-left: 30px;"><span class="tvl-type" style="color: #991b1b;">├─ Pendle Fee (5%)</span></td>
-            <td style="color: #991b1b;">-</td>
-            <td style="color: #991b1b;">-</td>
-            <td style="color: #991b1b;">-</td>
-            <td style="color: #991b1b;"><strong>-${formatNumber(ytPendleFee)}</strong></td>
-            <td style="color: #991b1b;">-${((ytPendleFee / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
-        </tr>
-        <tr style="background-color: #dcfce7;">
-            <td style="padding-left: 30px;"><span class="tvl-type" style="color: #166534;">└─ YT NET Points</span></td>
-            <td style="color: #166534;">-</td>
-            <td style="color: #166534;">-</td>
-            <td style="color: #166534;">-</td>
-            <td style="color: #166534;"><strong>${formatNumber(ytNetPoints)}</strong> <span style="font-size: 0.8em;">(net)</span></td>
-            <td style="color: #166534;">${((ytNetPoints / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
-        </tr>
-        <tr style="background-color: #fffbeb;">
-            <td style="padding-left: 20px;"><span class="tvl-type">Total LP (Both Markets)</span></td>
-            <td>${formatCurrency(weighted.lpTvl)}</td>
-            <td>${weighted.oct23.lpBoost || weighted.dec11.lpBoost}x</td>
-            <td>${formatCurrency(weighted.weightedLp)}</td>
-            <td><strong>${formatNumber(lpDailyPoints)}</strong></td>
-            <td>${lpShare.toFixed(2)}%</td>
         </tr>
         
         <!-- Shared Categories -->

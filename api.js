@@ -476,6 +476,7 @@ async function fetchTvlData() {
         const ytTotalSupplyOct23 = backendData.data.ytTotalSupplyOct23 || 0;
         const ytTotalSupplyDec11 = backendData.data.ytTotalSupplyDec11 || 0;
         const curveTvl = backendData.data.curveTvl || 0;
+        const curveAlUsdBalance = backendData.data.curveAlUsdBalance || 0;  // alUSD in Curve pool
         
         console.log('✅ YT Supply (Oct 23) from backend:', ytTotalSupplyOct23);
         console.log('✅ YT Supply (Dec 11) from backend:', ytTotalSupplyDec11);
@@ -510,6 +511,8 @@ async function fetchTvlData() {
             },
             pendleDec11: {
                 lpTvl: 0,
+                lpSyTvl: 0,  // SY portion of LP (gets points)
+                lpPtTvl: 0,  // PT portion of LP (excluded)
                 ytTvl: 0,
                 ptTvl: 0,
                 isMatured: isDec11Matured,
@@ -566,26 +569,60 @@ async function fetchTvlData() {
             const marketResponseDec11 = await getMarketData(PENDLE_CONFIG.MARKET_DEC11.address);
             if (marketResponseDec11.success && marketResponseDec11.data.liquidity) {
                 const totalPtDec11 = marketResponseDec11.data.totalPt || 0;
-                const ptPriceDec11 = marketResponseDec11.data.assetPriceUsd || liveAlUsdPrice;
+                const totalSyDec11 = marketResponseDec11.data.totalSy || 0;
+                const syPrice = liveAlUsdPrice;  // Use live alUSD price from Lagoon
+                
+                // Fetch USDC price from CoinGecko
+                let usdcPrice = 1.00;  // Default fallback
+                try {
+                    const coingeckoResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=usd');
+                    const coingeckoData = await coingeckoResponse.json();
+                    if (coingeckoData['usd-coin'] && coingeckoData['usd-coin'].usd) {
+                        usdcPrice = coingeckoData['usd-coin'].usd;
+                        console.log('✅ USDC Price from CoinGecko:', usdcPrice);
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Failed to fetch USDC price, using $1.00:', error.message);
+                }
+                
+                const ptPrice = usdcPrice;  // PT priced at USDC price
                 const actualLpTvl = marketResponseDec11.data.liquidity.usd || 0;
                 const actualYtTvl = ytTotalSupplyDec11 * liveAlUsdPrice;
+                
+                // Calculate LP composition using actual token amounts from Pendle API
+                // This is the most accurate method - use actual reserves!
+                const lpSyPortionUsd = totalSyDec11 * syPrice;
+                const lpPtPortionUsd = totalPtDec11 * ptPrice;
+                
+                const syPercent = actualLpTvl > 0 ? (lpSyPortionUsd / actualLpTvl) * 100 : 0;
+                const ptPercent = actualLpTvl > 0 ? (lpPtPortionUsd / actualLpTvl) * 100 : 0;
+                
+                console.log('💡 December 11 LP Breakdown (Direct from API):', {
+                    method: 'Using actual PT/SY token amounts from Pendle API',
+                    totalPt: totalPtDec11.toFixed(2),
+                    totalSy: totalSyDec11.toFixed(2),
+                    syPrice: syPrice.toFixed(6),
+                    ptPrice: ptPrice.toFixed(6),
+                    totalLpTvl: actualLpTvl.toFixed(2),
+                    lpSyPortion: lpSyPortionUsd.toFixed(2) + ` (${syPercent.toFixed(2)}%)`,
+                    lpPtPortion: lpPtPortionUsd.toFixed(2) + ` (${ptPercent.toFixed(2)}%)`
+                });
+                
+                // Store LP breakdown
+                results.pendleDec11.lpTvl = actualLpTvl; // Total LP
+                results.pendleDec11.lpSyTvl = lpSyPortionUsd; // SY portion (gets points)
+                results.pendleDec11.lpPtTvl = lpPtPortionUsd; // PT portion (EXCLUDED from points)
+                results.pendleDec11.ytTvl = isDec11Matured ? 0 : actualYtTvl;
                 
                 // Store actual locked TVL for visibility
                 results.pendleDec11.lockedLpTvl = actualLpTvl;
                 results.pendleDec11.lockedYtTvl = actualYtTvl;
                 
-                // If matured: YT shows as $0, LP shows actual (for migration tracking)
-                if (isDec11Matured) {
-                    results.pendleDec11.lpTvl = actualLpTvl;
-                    results.pendleDec11.ytTvl = 0; // YT value is $0 at maturity
-                    console.log('⚠️ December 11 Market MATURED - Locked LP:', actualLpTvl, 'Locked YT:', actualYtTvl, '(shown as $0)');
-                } else {
-                    results.pendleDec11.lpTvl = actualLpTvl;
-                    results.pendleDec11.ytTvl = actualYtTvl;
-                    console.log('✅ December 11 Market - LP:', results.pendleDec11.lpTvl, 'YT:', results.pendleDec11.ytTvl);
-                }
+                console.log(isDec11Matured ? 
+                    '⚠️ December 11 Market MATURED' : 
+                    '✅ December 11 Market - Total LP: $' + actualLpTvl.toFixed(0) + ', LP SY: $' + lpSyPortionUsd.toFixed(0) + ' (' + syPercent.toFixed(1) + '%), LP PT: $' + lpPtPortionUsd.toFixed(0) + ' (' + ptPercent.toFixed(1) + '%), YT: $' + actualYtTvl.toFixed(0));
                 
-                results.pendleDec11.ptTvl = totalPtDec11 * ptPriceDec11; // EXCLUDED from points
+                results.pendleDec11.ptTvl = totalPtDec11 * ptPrice; // Total PT supply (not in LP)
             }
             
             // Calculate combined totals for backward compatibility
@@ -599,19 +636,24 @@ async function fetchTvlData() {
         
         // Calculate total TVL = Gross TVL - SY alUSD (to avoid double counting)
         const syAlUsdValue = syAlUsdBalance * liveAlUsdPrice;
+        const curveAlUsdValue = curveAlUsdBalance * liveAlUsdPrice;
         results.totalTvl = results.defiLlamaTvl - syAlUsdValue;
         
         // Calculate Other TVL (NET TVL for points allocation)
         // Other TVL = Holders NOT using DeFi (not in Pendle, not in Curve)
-        // Formula: GROSS TVL - SY alUSD = NET TVL
-        // Note: SY alUSD already includes assets from BOTH active AND matured markets
-        // We don't need to subtract matured market TVL again (would be double counting)
-        // Matured markets get 0x boost in points calculation, but their TVL still counts for visibility
-        results.otherTvl = results.grossTvl - syAlUsdValue;
+        // Formula: GROSS TVL - SY alUSD - Curve alUSD = NET TVL
+        // We must subtract BOTH:
+        // 1. syAlUsdValue (alUSD in Pendle) - already counted in Pendle LP/YT
+        // 2. curveAlUsdValue (alUSD in Curve) - already counted in Curve TVL
+        // Otherwise we'd double-count these amounts in both their specific categories AND in Other TVL
+        results.otherTvl = results.grossTvl - syAlUsdValue - curveAlUsdValue;
         
         console.log('📊 TVL Calculation:', {
             grossTvl: results.grossTvl,
             syAlUsdValue: syAlUsdValue,
+            curveAlUsdBalance: curveAlUsdBalance,
+            curveAlUsdValue: curveAlUsdValue,
+            subtractedFromGross: syAlUsdValue + curveAlUsdValue,
             otherTvl: results.otherTvl,
             oct23Matured: isOct23Matured,
             dec11Matured: isDec11Matured
@@ -643,6 +685,13 @@ async function fetchTvlData() {
  * @returns {Object} Weighted TVL calculation with separate market data
  */
 function calculateWeightedTvl(tvlData) {
+    // Debug: Log input data
+    console.log('🔍 calculateWeightedTvl input:', {
+        dec11LpTvl: tvlData.pendleDec11?.lpTvl,
+        dec11LpSyTvl: tvlData.pendleDec11?.lpSyTvl,
+        dec11LpPtTvl: tvlData.pendleDec11?.lpPtTvl
+    });
+    
     // Check maturity status for boost calculation
     const isOct23Matured = tvlData.pendleOct23.isMatured || false;
     const isDec11Matured = tvlData.pendleDec11.isMatured || false;
@@ -665,19 +714,21 @@ function calculateWeightedTvl(tvlData) {
     });
     
     // Calculate weighted values for October 23 market
-    // If matured: 0x boost (no points earned)
+    // EXCLUDED FROM POINTS - Always 0x boost
     const ytCountOct23 = tvlData.pendleOct23.ytTvl / ALMANAK_POINTS_CONFIG.alUsdPrice;
-    const lpBoostOct23 = isOct23Matured ? 0 : lpBoostMultiplier;  // 0x if matured, otherwise dynamic boost
-    const ytBoostOct23 = isOct23Matured ? 0 : 5;                  // 0x if matured, 5x if active
+    const lpBoostOct23 = 0;  // EXCLUDED - Always 0x boost
+    const ytBoostOct23 = 0;  // EXCLUDED - Always 0x boost
     const weightedLpOct23 = tvlData.pendleOct23.lpTvl * lpBoostOct23;
     const weightedYtOct23 = (ytCountOct23 * ALMANAK_POINTS_CONFIG.alUsdPrice) * ytBoostOct23;
     
     // Calculate weighted values for December 11 market
-    // If matured: 0x boost (no points earned)
+    // ONLY SY portion of LP gets 1.5x boost, PT portion is EXCLUDED (0x)
     const ytCountDec11 = tvlData.pendleDec11.ytTvl / ALMANAK_POINTS_CONFIG.alUsdPrice;
-    const lpBoostDec11 = isDec11Matured ? 0 : lpBoostMultiplier;  // 0x if matured, otherwise dynamic boost
-    const ytBoostDec11 = isDec11Matured ? 0 : 5;                  // 0x if matured, 5x if active
-    const weightedLpDec11 = tvlData.pendleDec11.lpTvl * lpBoostDec11;
+    const lpSyTvlDec11 = tvlData.pendleDec11.lpSyTvl || 0;  // SY portion of LP (gets points)
+    const lpPtTvlDec11 = tvlData.pendleDec11.lpPtTvl || 0;  // PT portion of LP (EXCLUDED)
+    const lpBoostDec11 = isDec11Matured ? 0 : 1.5;  // 1.5x boost for Dec 11 LP SY portion, 0x if matured
+    const ytBoostDec11 = isDec11Matured ? 0 : 5;    // 0x if matured, 5x if active
+    const weightedLpDec11 = lpSyTvlDec11 * lpBoostDec11;  // Only SY portion gets boost
     const weightedYtDec11 = (ytCountDec11 * ALMANAK_POINTS_CONFIG.alUsdPrice) * ytBoostDec11;
     
     // Calculate weighted values for other categories
@@ -690,6 +741,14 @@ function calculateWeightedTvl(tvlData) {
     
     // Total weighted TVL = sum of all weighted categories
     const totalWeightedTvl = weightedOther + weightedLp + weightedYt + weightedCurve;
+    
+    // Debug: Log calculated weights
+    console.log('📊 Weighted values calculated:', {
+        dec11LpSyTvl: lpSyTvlDec11,
+        dec11LpPtTvl: lpPtTvlDec11,
+        dec11LpBoost: lpBoostDec11,
+        dec11WeightedLp: weightedLpDec11
+    });
     
     if (isOct23Matured || isDec11Matured) {
         console.log('⚠️ Matured Markets Detected - Points Distribution Adjusted:', {
@@ -718,13 +777,15 @@ function calculateWeightedTvl(tvlData) {
         },
         dec11: {
             ytTvl: tvlData.pendleDec11.ytTvl,
-            lpTvl: tvlData.pendleDec11.lpTvl,
+            lpTvl: tvlData.pendleDec11.lpTvl,  // Total LP
+            lpSyTvl: lpSyTvlDec11,  // SY portion of LP (gets points)
+            lpPtTvl: lpPtTvlDec11,  // PT portion of LP (EXCLUDED from points)
             ptTvl: tvlData.pendleDec11.ptTvl,
             isMatured: isDec11Matured,
             lockedYtTvl: tvlData.pendleDec11.lockedYtTvl || 0,
             lockedLpTvl: tvlData.pendleDec11.lockedLpTvl || 0,
             weightedYt: weightedYtDec11,
-            weightedLp: weightedLpDec11,
+            weightedLp: weightedLpDec11,  // Only SY portion weighted
             ytBoost: ytBoostDec11,
             lpBoost: lpBoostDec11
         },

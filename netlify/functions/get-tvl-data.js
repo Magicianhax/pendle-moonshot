@@ -121,7 +121,7 @@ exports.handler = async function(event, context) {
             ytTotalSupplyOct23: 0,
             ytTotalSupplyDec11: 0,
             curveUsdcBalance: 0,
-            curveAlUsdBalance: 0,
+            curveAlUsdBalance: 0,  // Expose this for proper Other TVL calculation
             curveTvl: 0,
             liveAlUsdPrice: liveAlUsdPrice,
             liveAlpUsdPrice: liveAlpUsdPrice,

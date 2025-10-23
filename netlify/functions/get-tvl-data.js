@@ -88,6 +88,33 @@ async function fetchLiveAlpUsdPrice() {
     }
 }
 
+/**
+ * Fetch live USDC price from CoinGecko API
+ * @returns {Promise<number>} Live USDC price
+ */
+async function fetchLiveUsdcPrice() {
+    try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=usd');
+        if (!response.ok) {
+            throw new Error(`CoinGecko API Error: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        if (data['usd-coin'] && data['usd-coin'].usd) {
+            const price = data['usd-coin'].usd;
+            console.log('✅ Live USDC price from CoinGecko:', price);
+            return price;
+        }
+        
+        throw new Error('USDC price not found in API response');
+    } catch (error) {
+        console.error('❌ Failed to fetch live USDC price:', error);
+        console.error('Error details:', error.message);
+        // Return fallback price if API fails
+        return ALMANAK_CONFIG.usdcPrice;
+    }
+}
+
 // Helper function to add delay between requests (avoid rate limiting)
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -106,11 +133,13 @@ exports.handler = async function(event, context) {
     }
 
     try {
-        console.log('💰 Fetching live prices from Lagoon Finance...');
+        console.log('💰 Fetching live prices...');
         const liveAlUsdPrice = await fetchLiveAlUsdPrice();
         const liveAlpUsdPrice = await fetchLiveAlpUsdPrice();
+        const liveUsdcPrice = await fetchLiveUsdcPrice();
         console.log('✅ Using alUSD price:', liveAlUsdPrice);
         console.log('✅ Using alpUSD price:', liveAlpUsdPrice);
+        console.log('✅ Using USDC price:', liveUsdcPrice);
         
         console.log('🚀 Fetching TVL data from Etherscan...');
         
@@ -125,6 +154,7 @@ exports.handler = async function(event, context) {
             curveTvl: 0,
             liveAlUsdPrice: liveAlUsdPrice,
             liveAlpUsdPrice: liveAlpUsdPrice,
+            liveUsdcPrice: liveUsdcPrice,  // Include USDC price
             timestamp: new Date().toISOString()
         };
 
@@ -229,8 +259,8 @@ exports.handler = async function(event, context) {
             console.error("❌ Curve alUSD Error:", error);
         }
 
-        // Calculate Curve TVL using live alUSD price
-        results.curveTvl = (results.curveUsdcBalance * ALMANAK_CONFIG.usdcPrice) + 
+        // Calculate Curve TVL using live prices
+        results.curveTvl = (results.curveUsdcBalance * liveUsdcPrice) + 
                            (results.curveAlUsdBalance * liveAlUsdPrice);
 
         console.log('🎉 All data fetched successfully');

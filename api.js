@@ -461,13 +461,16 @@ async function fetchTvlData() {
         // Extract live prices from backend response and update config
         const liveAlUsdPrice = backendData.data.liveAlUsdPrice || ALMANAK_POINTS_CONFIG.alUsdPrice;
         const liveAlpUsdPrice = backendData.data.liveAlpUsdPrice || ALMANAK_POINTS_CONFIG.alpUsdPrice;
+        const liveUsdcPrice = backendData.data.liveUsdcPrice || ALMANAK_POINTS_CONFIG.usdcPrice;
         
         // Update the config with live prices
         ALMANAK_POINTS_CONFIG.alUsdPrice = liveAlUsdPrice;
         ALMANAK_POINTS_CONFIG.alpUsdPrice = liveAlpUsdPrice;
+        ALMANAK_POINTS_CONFIG.usdcPrice = liveUsdcPrice;
         
         console.log('✅ Using live alUSD price:', liveAlUsdPrice);
         console.log('✅ Using live alpUSD price:', liveAlpUsdPrice);
+        console.log('✅ Using live USDC price:', liveUsdcPrice);
         
         // Extract data from backend
         const alUsdSupply = backendData.data.alUsdSupply || 0;
@@ -571,21 +574,7 @@ async function fetchTvlData() {
                 const totalPtDec11 = marketResponseDec11.data.totalPt || 0;
                 const totalSyDec11 = marketResponseDec11.data.totalSy || 0;
                 const syPrice = liveAlUsdPrice;  // Use live alUSD price from Lagoon
-                
-                // Fetch USDC price from CoinGecko
-                let usdcPrice = 1.00;  // Default fallback
-                try {
-                    const coingeckoResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=usd');
-                    const coingeckoData = await coingeckoResponse.json();
-                    if (coingeckoData['usd-coin'] && coingeckoData['usd-coin'].usd) {
-                        usdcPrice = coingeckoData['usd-coin'].usd;
-                        console.log('✅ USDC Price from CoinGecko:', usdcPrice);
-                    }
-                } catch (error) {
-                    console.warn('⚠️ Failed to fetch USDC price, using $1.00:', error.message);
-                }
-                
-                const ptPrice = usdcPrice;  // PT priced at USDC price
+                const ptPrice = liveUsdcPrice;  // Use live USDC price from serverless function (avoids CORS)
                 const actualLpTvl = marketResponseDec11.data.liquidity.usd || 0;
                 const actualYtTvl = ytTotalSupplyDec11 * liveAlUsdPrice;
                 
@@ -601,8 +590,8 @@ async function fetchTvlData() {
                     method: 'Using actual PT/SY token amounts from Pendle API',
                     totalPt: totalPtDec11.toFixed(2),
                     totalSy: totalSyDec11.toFixed(2),
-                    syPrice: syPrice.toFixed(6),
-                    ptPrice: ptPrice.toFixed(6),
+                    syPrice: syPrice.toFixed(6) + ' (alUSD from Lagoon)',
+                    ptPrice: ptPrice.toFixed(6) + ' (USDC from CoinGecko)',
                     totalLpTvl: actualLpTvl.toFixed(2),
                     lpSyPortion: lpSyPortionUsd.toFixed(2) + ` (${syPercent.toFixed(2)}%)`,
                     lpPtPortion: lpPtPortionUsd.toFixed(2) + ` (${ptPercent.toFixed(2)}%)`

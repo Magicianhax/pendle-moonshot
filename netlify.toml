@@ -1,15 +1,27 @@
 [build]
   # No build command needed for static site
   command = ""
+  publish = "."
+  functions = "netlify/functions"
 
 [build.environment]
   # No environment variables needed
 
+# SPA routing - redirect all non-function/non-file requests to index.html
+# force = false allows Netlify to handle functions and static files first
 [[redirects]]
-  # SPA routing - redirect all non-file requests to index.html
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
+
+[[headers]]
+  # CORS headers for Netlify Functions
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
 
 [[headers]]
   # Cache static assets

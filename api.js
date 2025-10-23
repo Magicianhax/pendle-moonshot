@@ -448,7 +448,7 @@ async function fetchTvlData() {
         
         // Fetch data from backend API FIRST to get live prices
         console.log('🚀 Fetching TVL data from backend API...');
-        const backendResponse = await fetch('/.netlify/functions/get-tvl-data');
+        const backendResponse = await fetch('/api/get-tvl-data');
         const backendData = await backendResponse.json();
         
         if (!backendData.success || !backendData.data) {

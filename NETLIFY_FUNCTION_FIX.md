@@ -17,11 +17,18 @@ This meant that when the frontend tried to fetch from `/.netlify/functions/get-t
 
 ## Solution Applied
 
-### 1. Fixed netlify.toml Configuration
+### 1. Created Custom API Route Mapping
+The proper solution is to create a custom `/api/*` route that maps to Netlify Functions **BEFORE** the catch-all redirect. This ensures API calls are never intercepted.
+
+### 2. Updated netlify.toml Configuration
 - Added explicit `functions = "netlify/functions"` to `[build]` section
-- Changed redirect rule to use `force = false` to allow Netlify to handle functions first
-- Added CORS headers for function responses
-- **Removed invalid redirect** for `/.netlify/functions/*` (Netlify doesn't allow this path in redirects)
+- Created `/api/*` to `/.netlify/functions/:splat` redirect rule (with `force = true`)
+- Placed API redirect BEFORE catch-all SPA redirect
+- Added CORS headers for both routes
+
+### 3. Updated api.js
+- Changed fetch URL from `/.netlify/functions/get-tvl-data` to `/api/get-tvl-data`
+- This uses the cleaner custom route
 
 ### Final netlify.toml Configuration:
 ```toml
@@ -30,8 +37,14 @@ This meant that when the frontend tried to fetch from `/.netlify/functions/get-t
   publish = "."
   functions = "netlify/functions"
 
-# SPA routing - redirect all non-function/non-file requests to index.html
-# force = false allows Netlify to handle functions and static files first
+# Map /api/* requests to Netlify Functions (MUST come before catch-all)
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+# SPA routing - redirect all other requests to index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -39,8 +52,8 @@ This meant that when the frontend tried to fetch from `/.netlify/functions/get-t
   force = false
 
 [[headers]]
-  # CORS headers for Netlify Functions
-  for = "/.netlify/functions/*"
+  # CORS headers for API routes
+  for = "/api/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Headers = "Content-Type"
@@ -49,16 +62,19 @@ This meant that when the frontend tried to fetch from `/.netlify/functions/get-t
 
 ## How It Works Now
 
-1. **Netlify processes requests in this order:**
-   - Static files (JS, CSS, images, etc.)
-   - Netlify Functions (`/.netlify/functions/*`)
-   - Then redirects (because `force = false`)
+1. **Netlify processes redirects in order (top to bottom):**
+   - `/api/*` → Maps to `/.netlify/functions/:splat` (with `force = true` to ensure it executes)
+   - `/*` → Redirects to `index.html` for SPA routing (with `force = false`)
 
-2. **Function calls now work:**
-   - `fetch('/.netlify/functions/get-tvl-data')` → Executes the function
+2. **API calls now work correctly:**
+   - Frontend: `fetch('/api/get-tvl-data')` 
+   - Netlify: Redirects to `/.netlify/functions/get-tvl-data`
+   - Function executes and returns data ✅
+   
+3. **Unknown routes still work for SPA:**
    - `/some/unknown/path` → Redirects to `index.html` for SPA routing
 
-3. **CORS is properly configured** for function responses
+4. **CORS is properly configured** for both `/api/*` and `/.netlify/functions/*` routes
 
 ## Testing
 After deployment:

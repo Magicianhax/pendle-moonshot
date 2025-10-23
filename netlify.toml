@@ -7,8 +7,14 @@
 [build.environment]
   # No environment variables needed
 
-# SPA routing - redirect all non-function/non-file requests to index.html
-# force = false allows Netlify to handle functions and static files first
+# Map /api/* requests to Netlify Functions (MUST come before catch-all)
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+# SPA routing - redirect all other requests to index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -16,7 +22,15 @@
   force = false
 
 [[headers]]
-  # CORS headers for Netlify Functions
+  # CORS headers for API routes (which map to Netlify Functions)
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+
+[[headers]]
+  # CORS headers for direct Netlify Functions access (backup)
   for = "/.netlify/functions/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"

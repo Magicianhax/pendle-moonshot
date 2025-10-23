@@ -15,11 +15,7 @@ const ALMANAK_CONFIG = {
     lagoonAlpUsdApiUrl: "https://app.lagoon.finance/api/vaults?chainId=1&vault=0x5a97B0B97197299456Af841F8605543b13b12eE3",
     alUsdPrice: 1.0243, // Fallback price if API fails
     alpUsdPrice: 1.01, // Fallback price if API fails
-    usdcPrice: 1.00,
-    // Pendle market addresses
-    marketOct23: "0x0D67218c5a1b7dDEA9E19e993c247caB2e36ECF3",
-    marketDec11: "0xC02A16a74471F1bBbC5C5d3E6eac93f944C31435",
-    pendleMarketApiUrl: "https://api-v2.pendle.finance/core/v2/1/markets"
+    usdcPrice: 1.00
 };
 
 /**
@@ -119,45 +115,6 @@ async function fetchLiveUsdcPrice() {
     }
 }
 
-/**
- * Fetch Pendle market data from Pendle API
- * @param {string} marketAddress - The market address
- * @returns {Promise<Object>} Market data
- */
-async function fetchPendleMarketData(marketAddress) {
-    try {
-        const response = await fetch(`${ALMANAK_CONFIG.pendleMarketApiUrl}/${marketAddress}/data`);
-        if (!response.ok) {
-            throw new Error(`Pendle API Error: ${response.status}`);
-        }
-        const data = await response.json();
-        
-        console.log(`✅ Fetched Pendle market data for ${marketAddress}`);
-        return {
-            success: true,
-            data: {
-                underlyingApy: data.underlyingApy || 0,
-                underlyingInterestApy: data.underlyingInterestApy || 0,
-                impliedApy: data.impliedApy || 0,
-                aggregatedApy: data.aggregatedApy || 0,
-                timestamp: data.timestamp,
-                liquidity: data.liquidity,
-                tradingVolume: data.tradingVolume,
-                totalPt: data.totalPt || 0,
-                totalSy: data.totalSy || 0,
-                assetPriceUsd: data.assetPriceUsd || 0,
-                ptDiscount: data.ptDiscount || 0
-            }
-        };
-    } catch (error) {
-        console.error(`❌ Failed to fetch Pendle market data for ${marketAddress}:`, error);
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
 // Helper function to add delay between requests (avoid rate limiting)
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -176,22 +133,13 @@ exports.handler = async function(event, context) {
     }
 
     try {
-        console.log('💰 Fetching live prices and market data...');
-        
-        // Fetch all prices and Pendle market data in parallel
-        const [liveAlUsdPrice, liveAlpUsdPrice, liveUsdcPrice, pendleOct23, pendleDec11] = await Promise.all([
-            fetchLiveAlUsdPrice(),
-            fetchLiveAlpUsdPrice(),
-            fetchLiveUsdcPrice(),
-            fetchPendleMarketData(ALMANAK_CONFIG.marketOct23),
-            fetchPendleMarketData(ALMANAK_CONFIG.marketDec11)
-        ]);
-        
+        console.log('💰 Fetching live prices...');
+        const liveAlUsdPrice = await fetchLiveAlUsdPrice();
+        const liveAlpUsdPrice = await fetchLiveAlpUsdPrice();
+        const liveUsdcPrice = await fetchLiveUsdcPrice();
         console.log('✅ Using alUSD price:', liveAlUsdPrice);
         console.log('✅ Using alpUSD price:', liveAlpUsdPrice);
         console.log('✅ Using USDC price:', liveUsdcPrice);
-        console.log('✅ Pendle Oct 23 data fetched:', pendleOct23.success);
-        console.log('✅ Pendle Dec 11 data fetched:', pendleDec11.success);
         
         console.log('🚀 Fetching TVL data from Etherscan...');
         
@@ -207,9 +155,6 @@ exports.handler = async function(event, context) {
             liveAlUsdPrice: liveAlUsdPrice,
             liveAlpUsdPrice: liveAlpUsdPrice,
             liveUsdcPrice: liveUsdcPrice,  // Include USDC price
-            // Pendle market data (fetched server-side to avoid CORS)
-            pendleOct23: pendleOct23.success ? pendleOct23.data : null,
-            pendleDec11: pendleDec11.success ? pendleDec11.data : null,
             timestamp: new Date().toISOString()
         };
 

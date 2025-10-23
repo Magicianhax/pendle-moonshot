@@ -228,22 +228,12 @@ async function getMarketData(marketAddress = PENDLE_CONFIG.MARKET_OCT23.address)
     }
 }
 
-// Cache for Pendle market data (fetched from backend to avoid CORS)
-let cachedPendleMarketData = null;
-
 /**
  * Get market data for all markets
- * Uses cached data from backend if available, otherwise fetches directly
  * @returns {Promise<Object>} Market data for both markets
  */
 async function getAllMarketsData() {
     try {
-        // If we have cached data from backend, use it (avoids CORS issues)
-        if (cachedPendleMarketData) {
-            return cachedPendleMarketData;
-        }
-        
-        // Fallback: fetch directly (may fail in production due to CORS)
         const [oct23Data, dec11Data] = await Promise.all([
             getMarketData(PENDLE_CONFIG.MARKET_OCT23.address),
             getMarketData(PENDLE_CONFIG.MARKET_DEC11.address)
@@ -491,20 +481,8 @@ async function fetchTvlData() {
         const curveTvl = backendData.data.curveTvl || 0;
         const curveAlUsdBalance = backendData.data.curveAlUsdBalance || 0;  // alUSD in Curve pool
         
-        // Extract Pendle market data (now fetched server-side to avoid CORS)
-        const pendleOct23Data = backendData.data.pendleOct23;
-        const pendleDec11Data = backendData.data.pendleDec11;
-        
-        // Cache Pendle market data for use by getAllMarketsData()
-        cachedPendleMarketData = {
-            success: true,
-            oct23: pendleOct23Data,
-            dec11: pendleDec11Data
-        };
-        
         console.log('✅ YT Supply (Oct 23) from backend:', ytTotalSupplyOct23);
         console.log('✅ YT Supply (Dec 11) from backend:', ytTotalSupplyDec11);
-        console.log('✅ Pendle market data cached for UI updates');
         
         // Check maturity status for each market
         const isOct23Matured = isMarketMatured('oct23');
@@ -564,11 +542,12 @@ async function fetchTvlData() {
         
         // Get Pendle market data for BOTH markets
         try {
-            // Use October 23 market data from backend (already fetched server-side)
-            if (pendleOct23Data && pendleOct23Data.liquidity) {
-                const totalPtOct23 = pendleOct23Data.totalPt || 0;
-                const ptPriceOct23 = pendleOct23Data.assetPriceUsd || liveAlUsdPrice;
-                const actualLpTvl = pendleOct23Data.liquidity.usd || 0;
+            // Fetch October 23 market data
+            const marketResponseOct23 = await getMarketData(PENDLE_CONFIG.MARKET_OCT23.address);
+            if (marketResponseOct23.success && marketResponseOct23.data.liquidity) {
+                const totalPtOct23 = marketResponseOct23.data.totalPt || 0;
+                const ptPriceOct23 = marketResponseOct23.data.assetPriceUsd || liveAlUsdPrice;
+                const actualLpTvl = marketResponseOct23.data.liquidity.usd || 0;
                 const actualYtTvl = ytTotalSupplyOct23 * liveAlUsdPrice;
                 
                 // Store actual locked TVL for visibility
@@ -589,13 +568,14 @@ async function fetchTvlData() {
                 results.pendleOct23.ptTvl = totalPtOct23 * ptPriceOct23; // EXCLUDED from points
             }
             
-            // Use December 11 market data from backend (already fetched server-side)
-            if (pendleDec11Data && pendleDec11Data.liquidity) {
-                const totalPtDec11 = pendleDec11Data.totalPt || 0;
-                const totalSyDec11 = pendleDec11Data.totalSy || 0;
+            // Fetch December 11 market data
+            const marketResponseDec11 = await getMarketData(PENDLE_CONFIG.MARKET_DEC11.address);
+            if (marketResponseDec11.success && marketResponseDec11.data.liquidity) {
+                const totalPtDec11 = marketResponseDec11.data.totalPt || 0;
+                const totalSyDec11 = marketResponseDec11.data.totalSy || 0;
                 const syPrice = liveAlUsdPrice;  // Use live alUSD price from Lagoon
                 const ptPrice = liveUsdcPrice;  // Use live USDC price from serverless function (avoids CORS)
-                const actualLpTvl = pendleDec11Data.liquidity.usd || 0;
+                const actualLpTvl = marketResponseDec11.data.liquidity.usd || 0;
                 const actualYtTvl = ytTotalSupplyDec11 * liveAlUsdPrice;
                 
                 // Calculate LP composition using actual token amounts from Pendle API

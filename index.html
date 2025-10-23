@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pendle Moonshot Calculator</title>
+    <!-- Force browsers to never cache this page -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <style>
         * {
             margin: 0;
@@ -1032,6 +1036,36 @@
         </div>
     </div>
 
+    <!-- Force clear all browser caches -->
+    <script>
+        // Current version - update this timestamp on each deployment
+        const CURRENT_VERSION = '1729716000';
+        
+        // Clear Service Workers (if any)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => registration.unregister());
+            });
+        }
+        
+        // Clear all caches
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => caches.delete(name));
+            });
+        }
+        
+        // Check localStorage for version and force reload if outdated
+        const storedVersion = localStorage.getItem('app_version');
+        if (storedVersion && storedVersion !== CURRENT_VERSION) {
+            console.log('🔄 New version detected, forcing reload...');
+            localStorage.setItem('app_version', CURRENT_VERSION);
+            location.reload(true); // Hard reload
+        } else if (!storedVersion) {
+            localStorage.setItem('app_version', CURRENT_VERSION);
+        }
+    </script>
+    
     <!-- Load html2canvas library for image export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Load API module first -->

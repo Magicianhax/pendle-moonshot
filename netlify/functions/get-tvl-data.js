@@ -91,6 +91,47 @@ async function fetchLiveAlpUsdPrice() {
 // Helper function to add delay between requests (avoid rate limiting)
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Retry function with exponential backoff for Etherscan API
+async function fetchWithRetry(url, maxRetries = 5, initialDelay = 500) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`🔄 Attempt ${attempt}/${maxRetries} for: ${url.substring(0, 80)}...`);
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            // Check if Etherscan returned valid data
+            if (data.status === "1" && data.result) {
+                console.log(`✅ Success on attempt ${attempt}`);
+                return { success: true, data };
+            }
+            
+            // Log Etherscan error message
+            if (data.message) {
+                console.warn(`⚠️ Etherscan message: ${data.message}`);
+            }
+            
+            // If rate limited or error, wait and retry
+            if (attempt < maxRetries) {
+                const waitTime = initialDelay * Math.pow(2, attempt - 1); // Exponential backoff
+                console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+                await delay(waitTime);
+            }
+        } catch (error) {
+            console.error(`❌ Attempt ${attempt} failed:`, error.message);
+            
+            if (attempt < maxRetries) {
+                const waitTime = initialDelay * Math.pow(2, attempt - 1);
+                console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+                await delay(waitTime);
+            }
+        }
+    }
+    
+    console.error(`❌ All ${maxRetries} attempts failed for URL`);
+    return { success: false, data: null };
+}
+
 exports.handler = async function(event, context) {
     // Enable CORS
     const headers = {
@@ -128,45 +169,40 @@ exports.handler = async function(event, context) {
             timestamp: new Date().toISOString()
         };
 
-        // Fetch alUSD total supply
-        try {
-            const alUsdSupplyUrl = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.alUsdToken}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
-            const alUsdResponse = await fetch(alUsdSupplyUrl);
-            const alUsdData = await alUsdResponse.json();
-            if (alUsdData.status === "1" && alUsdData.result) {
-                results.alUsdSupply = parseFloat(alUsdData.result) / 1e18;
-                console.log('✅ alUSD Supply:', results.alUsdSupply);
-            }
-        } catch (error) {
-            console.error("❌ alUSD Supply Error:", error);
+        // Fetch alUSD total supply (with retry)
+        console.log('🔍 Fetching alUSD Supply...');
+        const alUsdSupplyUrl = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.alUsdToken}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
+        const alUsdSupplyResult = await fetchWithRetry(alUsdSupplyUrl, 3, 500);
+        
+        if (alUsdSupplyResult.success && alUsdSupplyResult.data.result) {
+            results.alUsdSupply = parseFloat(alUsdSupplyResult.data.result) / 1e18;
+            console.log('✅ alUSD Supply:', results.alUsdSupply);
         }
-        await delay(250); // Avoid rate limiting
+        await delay(250);
 
-        // Fetch alpUSD total supply
-        try {
-            const alpUsdSupplyUrl = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.alpUsdToken}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
-            const alpUsdResponse = await fetch(alpUsdSupplyUrl);
-            const alpUsdData = await alpUsdResponse.json();
-            if (alpUsdData.status === "1" && alpUsdData.result) {
-                results.alpUsdSupply = parseFloat(alpUsdData.result) / 1e18;
-                console.log('✅ alpUSD Supply:', results.alpUsdSupply);
-            }
-        } catch (error) {
-            console.error("❌ alpUSD Supply Error:", error);
+        // Fetch alpUSD total supply (with retry)
+        console.log('🔍 Fetching alpUSD Supply...');
+        const alpUsdSupplyUrl = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.alpUsdToken}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
+        const alpUsdSupplyResult = await fetchWithRetry(alpUsdSupplyUrl, 3, 500);
+        
+        if (alpUsdSupplyResult.success && alpUsdSupplyResult.data.result) {
+            results.alpUsdSupply = parseFloat(alpUsdSupplyResult.data.result) / 1e18;
+            console.log('✅ alpUSD Supply:', results.alpUsdSupply);
         }
-        await delay(250); // Avoid rate limiting
+        await delay(250);
 
-        // Fetch SY alUSD balance
-        try {
-            const syBalanceUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_CONFIG.alUsdToken}&address=${ALMANAK_CONFIG.syContractAddress}&tag=latest&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
-            const syResponse = await fetch(syBalanceUrl);
-            const syData = await syResponse.json();
-            if (syData.status === "1" && syData.result) {
-                results.syAlUsdBalance = parseFloat(syData.result) / 1e18;
-                console.log('✅ SY alUSD Balance:', results.syAlUsdBalance);
-            }
-        } catch (error) {
-            console.error("❌ SY Balance Error:", error);
+        // Fetch SY alUSD balance (CRITICAL - retry with backoff)
+        console.log('🔍 Fetching SY alUSD Balance (critical for TVL calculation)...');
+        const syBalanceUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_CONFIG.alUsdToken}&address=${ALMANAK_CONFIG.syContractAddress}&tag=latest&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
+        const syResult = await fetchWithRetry(syBalanceUrl, 5, 500);
+        
+        if (syResult.success && syResult.data.result) {
+            results.syAlUsdBalance = parseFloat(syResult.data.result) / 1e18;
+            console.log('✅ SY alUSD Balance:', results.syAlUsdBalance);
+        } else {
+            console.error('❌ CRITICAL: Failed to fetch SY alUSD Balance after all retries');
+            // Set a warning flag but continue
+            results.syAlUsdBalanceError = true;
         }
         await delay(250); // Avoid rate limiting
 
@@ -216,17 +252,17 @@ exports.handler = async function(event, context) {
         }
         await delay(250); // Avoid rate limiting
 
-        // Fetch Curve pool alUSD balance
-        try {
-            const curveAlUsdUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_CONFIG.alUsdToken}&address=${ALMANAK_CONFIG.curvePoolAddress}&tag=latest&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
-            const curveAlUsdResponse = await fetch(curveAlUsdUrl);
-            const curveAlUsdData = await curveAlUsdResponse.json();
-            if (curveAlUsdData.status === "1" && curveAlUsdData.result) {
-                results.curveAlUsdBalance = parseFloat(curveAlUsdData.result) / 1e18;
-                console.log('✅ Curve alUSD Balance:', results.curveAlUsdBalance);
-            }
-        } catch (error) {
-            console.error("❌ Curve alUSD Error:", error);
+        // Fetch Curve pool alUSD balance (IMPORTANT - for double-counting fix)
+        console.log('🔍 Fetching Curve alUSD Balance (important for Other TVL calculation)...');
+        const curveAlUsdUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_CONFIG.alUsdToken}&address=${ALMANAK_CONFIG.curvePoolAddress}&tag=latest&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
+        const curveAlUsdResult = await fetchWithRetry(curveAlUsdUrl, 5, 500);
+        
+        if (curveAlUsdResult.success && curveAlUsdResult.data.result) {
+            results.curveAlUsdBalance = parseFloat(curveAlUsdResult.data.result) / 1e18;
+            console.log('✅ Curve alUSD Balance:', results.curveAlUsdBalance);
+        } else {
+            console.error('❌ Failed to fetch Curve alUSD Balance after all retries');
+            results.curveAlUsdBalanceError = true;
         }
 
         // Calculate Curve TVL using live alUSD price

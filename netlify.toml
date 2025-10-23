@@ -6,10 +6,17 @@
   # No environment variables needed
 
 [[redirects]]
-  # SPA routing - redirect all non-file requests to index.html
+  # Don't redirect function calls
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  # SPA routing - redirect all non-file, non-function requests to index.html
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 
 [[headers]]
   # Cache static assets

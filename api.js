@@ -190,7 +190,10 @@ function formatApiResponse(apiResponse) {
  */
 async function getMarketData(marketAddress = PENDLE_CONFIG.MARKET_OCT23.address) {
     try {
-        const response = await fetch(`${PENDLE_CONFIG.MARKET_API_URL}/${marketAddress}/data`, {
+        console.log(`📊 Fetching market data for: ${marketAddress}`);
+        
+        // Use serverless function to avoid CORS issues
+        const response = await fetch(`/api/get-pendle-market?market=${marketAddress}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json"
@@ -201,7 +204,15 @@ async function getMarketData(marketAddress = PENDLE_CONFIG.MARKET_OCT23.address)
             throw new Error(`Market API Error: ${response.status} - ${response.statusText}`);
         }
 
-        const data = await response.json();
+        const result = await response.json();
+        
+        if (!result.success || !result.data) {
+            throw new Error(result.error || 'Failed to fetch market data');
+        }
+        
+        const data = result.data;
+        
+        console.log(`✅ Market data loaded: ${marketAddress.slice(0, 10)}... | Underlying APY: ${(data.underlyingApy * 100).toFixed(2)}% | Implied APY: ${(data.impliedApy * 100).toFixed(2)}%`);
         
         return {
             success: true,
@@ -220,7 +231,7 @@ async function getMarketData(marketAddress = PENDLE_CONFIG.MARKET_OCT23.address)
         };
 
     } catch (error) {
-        console.error('Market API Error:', error);
+        console.error('❌ Market API Error:', error);
         return {
             success: false,
             error: error.message || 'Failed to fetch market data'

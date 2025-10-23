@@ -206,49 +206,45 @@ exports.handler = async function(event, context) {
         }
         await delay(250); // Avoid rate limiting
 
-        // Fetch YT total supply for October 23 market
-        try {
-            const ytSupplyUrlOct23 = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.ytTokenOct23}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
-            const ytResponseOct23 = await fetch(ytSupplyUrlOct23);
-            const ytDataOct23 = await ytResponseOct23.json();
-            if (ytDataOct23.status === "1" && ytDataOct23.result) {
-                results.ytTotalSupplyOct23 = parseFloat(ytDataOct23.result) / 1e6; // 6 decimals
-                console.log('✅ YT Total Supply (Oct 23):', results.ytTotalSupplyOct23);
-            } else {
-                console.error('❌ YT Supply (Oct 23) failed:', ytDataOct23);
-            }
-        } catch (error) {
-            console.error("❌ YT Supply (Oct 23) Error:", error);
+        // Fetch YT total supply for October 23 market (with retry)
+        console.log('🔍 Fetching YT Supply (Oct 23)...');
+        const ytSupplyUrlOct23 = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.ytTokenOct23}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
+        const ytResultOct23 = await fetchWithRetry(ytSupplyUrlOct23, 5, 500);
+        
+        if (ytResultOct23.success && ytResultOct23.data.result) {
+            results.ytTotalSupplyOct23 = parseFloat(ytResultOct23.data.result) / 1e6; // 6 decimals
+            console.log('✅ YT Total Supply (Oct 23):', results.ytTotalSupplyOct23);
+        } else {
+            console.error('❌ Failed to fetch YT Supply (Oct 23) after all retries');
+            results.ytTotalSupplyOct23Error = true;
         }
         await delay(250); // Avoid rate limiting
 
-        // Fetch YT total supply for December 11 market
-        try {
-            const ytSupplyUrlDec11 = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.ytTokenDec11}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
-            const ytResponseDec11 = await fetch(ytSupplyUrlDec11);
-            const ytDataDec11 = await ytResponseDec11.json();
-            if (ytDataDec11.status === "1" && ytDataDec11.result) {
-                results.ytTotalSupplyDec11 = parseFloat(ytDataDec11.result) / 1e6; // 6 decimals
-                console.log('✅ YT Total Supply (Dec 11):', results.ytTotalSupplyDec11);
-            } else {
-                console.error('❌ YT Supply (Dec 11) failed:', ytDataDec11);
-            }
-        } catch (error) {
-            console.error("❌ YT Supply (Dec 11) Error:", error);
+        // Fetch YT total supply for December 11 market (with retry)
+        console.log('🔍 Fetching YT Supply (Dec 11)...');
+        const ytSupplyUrlDec11 = `https://api.etherscan.io/v2/api?chainid=1&module=stats&action=tokensupply&contractaddress=${ALMANAK_CONFIG.ytTokenDec11}&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
+        const ytResultDec11 = await fetchWithRetry(ytSupplyUrlDec11, 5, 500);
+        
+        if (ytResultDec11.success && ytResultDec11.data.result) {
+            results.ytTotalSupplyDec11 = parseFloat(ytResultDec11.data.result) / 1e6; // 6 decimals
+            console.log('✅ YT Total Supply (Dec 11):', results.ytTotalSupplyDec11);
+        } else {
+            console.error('❌ Failed to fetch YT Supply (Dec 11) after all retries');
+            results.ytTotalSupplyDec11Error = true;
         }
         await delay(250); // Avoid rate limiting
 
-        // Fetch Curve pool USDC balance
-        try {
-            const curveUsdcUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_CONFIG.usdcToken}&address=${ALMANAK_CONFIG.curvePoolAddress}&tag=latest&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
-            const curveUsdcResponse = await fetch(curveUsdcUrl);
-            const curveUsdcData = await curveUsdcResponse.json();
-            if (curveUsdcData.status === "1" && curveUsdcData.result) {
-                results.curveUsdcBalance = parseFloat(curveUsdcData.result) / 1e6;
-                console.log('✅ Curve USDC Balance:', results.curveUsdcBalance);
-            }
-        } catch (error) {
-            console.error("❌ Curve USDC Error:", error);
+        // Fetch Curve pool USDC balance (with retry)
+        console.log('🔍 Fetching Curve USDC Balance...');
+        const curveUsdcUrl = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokenbalance&contractaddress=${ALMANAK_CONFIG.usdcToken}&address=${ALMANAK_CONFIG.curvePoolAddress}&tag=latest&apikey=${ALMANAK_CONFIG.etherscanApiKey}`;
+        const curveUsdcResult = await fetchWithRetry(curveUsdcUrl, 5, 500);
+        
+        if (curveUsdcResult.success && curveUsdcResult.data.result) {
+            results.curveUsdcBalance = parseFloat(curveUsdcResult.data.result) / 1e6;
+            console.log('✅ Curve USDC Balance:', results.curveUsdcBalance);
+        } else {
+            console.error('❌ Failed to fetch Curve USDC Balance after all retries');
+            results.curveUsdcBalanceError = true;
         }
         await delay(250); // Avoid rate limiting
 

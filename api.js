@@ -189,21 +189,33 @@ function formatApiResponse(apiResponse) {
  * @returns {Promise<Object>} Market data response
  */
 async function getMarketData(marketAddress = PENDLE_CONFIG.MARKET_OCT23.address) {
+    const url = `${PENDLE_CONFIG.MARKET_API_URL}/${marketAddress}/data`;
+    console.log(`🔍 [PENDLE API] Fetching market data from: ${url}`);
+    console.log(`🔍 [PENDLE API] Market address: ${marketAddress}`);
+    
     try {
-        const response = await fetch(`${PENDLE_CONFIG.MARKET_API_URL}/${marketAddress}/data`, {
+        console.log(`⏳ [PENDLE API] Making fetch request...`);
+        const response = await fetch(url, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json"
             }
         });
 
+        console.log(`📡 [PENDLE API] Response Status: ${response.status} ${response.statusText}`);
+        console.log(`📡 [PENDLE API] Response Headers:`, [...response.headers.entries()]);
+
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ [PENDLE API] Error Response Body:`, errorText);
             throw new Error(`Market API Error: ${response.status} - ${response.statusText}`);
         }
 
+        console.log(`⏳ [PENDLE API] Parsing JSON response...`);
         const data = await response.json();
+        console.log(`✅ [PENDLE API] Response Data:`, data);
         
-        return {
+        const result = {
             success: true,
             data: {
                 underlyingApy: data.underlyingApy || 0,
@@ -213,14 +225,20 @@ async function getMarketData(marketAddress = PENDLE_CONFIG.MARKET_OCT23.address)
                 timestamp: data.timestamp,
                 liquidity: data.liquidity,
                 tradingVolume: data.tradingVolume,
-                totalPt: data.totalPt || 0, // Include PT total for points calculation
+                totalPt: data.totalPt || 0,
                 totalSy: data.totalSy || 0,
                 assetPriceUsd: data.assetPriceUsd || 0
             }
         };
+        
+        console.log(`✅ [PENDLE API] Market data processed successfully`);
+        return result;
 
     } catch (error) {
-        console.error('Market API Error:', error);
+        console.error(`❌ [PENDLE API] FETCH FAILED for ${marketAddress}`);
+        console.error(`❌ [PENDLE API] Error name:`, error.name);
+        console.error(`❌ [PENDLE API] Error message:`, error.message);
+        console.error(`❌ [PENDLE API] Error stack:`, error.stack);
         return {
             success: false,
             error: error.message || 'Failed to fetch market data'
@@ -442,21 +460,28 @@ const ALMANAK_POINTS_CONFIG = {
  * @returns {Promise<Object>} TVL breakdown data
  */
 async function fetchTvlData() {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🚀 [START] fetchTvlData() called');
+    console.log('═══════════════════════════════════════════════════════');
+    
     try {
         // Note: Live prices are fetched by the serverless function to avoid CORS
-        console.log('📊 Fetching TVL data from serverless function...');
+        console.log('📊 [BACKEND] Fetching TVL data from serverless function...');
         
         // Fetch data from backend API FIRST to get live prices
-        console.log('🚀 Fetching TVL data from backend API...');
+        console.log('🚀 [BACKEND] Calling /.netlify/functions/get-tvl-data...');
         const backendResponse = await fetch('/.netlify/functions/get-tvl-data');
+        console.log('📡 [BACKEND] Response status:', backendResponse.status, backendResponse.statusText);
+        
         const backendData = await backendResponse.json();
+        console.log('📡 [BACKEND] Response data received:', backendData);
         
         if (!backendData.success || !backendData.data) {
-            console.error('❌ Backend API returned error:', backendData.error);
+            console.error('❌ [BACKEND] API returned error:', backendData.error);
             throw new Error(backendData.error || 'Backend API failed');
         }
         
-        console.log('✅ Backend API response:', backendData.data);
+        console.log('✅ [BACKEND] API response successful:', backendData.data);
         
         // Extract live prices from backend response and update config
         const liveAlUsdPrice = backendData.data.liveAlUsdPrice || ALMANAK_POINTS_CONFIG.alUsdPrice;
@@ -541,9 +566,12 @@ async function fetchTvlData() {
         results.grossTvl = results.defiLlamaTvl;
         
         // Get Pendle market data for BOTH markets
+        console.log('🎯 [MAIN] Starting Pendle market data fetch for both markets...');
         try {
             // Fetch October 23 market data
+            console.log('🎯 [MAIN] Fetching October 23 market data...');
             const marketResponseOct23 = await getMarketData(PENDLE_CONFIG.MARKET_OCT23.address);
+            console.log('🎯 [MAIN] October 23 market response:', marketResponseOct23);
             if (marketResponseOct23.success && marketResponseOct23.data.liquidity) {
                 const totalPtOct23 = marketResponseOct23.data.totalPt || 0;
                 const ptPriceOct23 = marketResponseOct23.data.assetPriceUsd || liveAlUsdPrice;
@@ -569,7 +597,9 @@ async function fetchTvlData() {
             }
             
             // Fetch December 11 market data
+            console.log('🎯 [MAIN] Fetching December 11 market data...');
             const marketResponseDec11 = await getMarketData(PENDLE_CONFIG.MARKET_DEC11.address);
+            console.log('🎯 [MAIN] December 11 market response:', marketResponseDec11);
             if (marketResponseDec11.success && marketResponseDec11.data.liquidity) {
                 const totalPtDec11 = marketResponseDec11.data.totalPt || 0;
                 const totalSyDec11 = marketResponseDec11.data.totalSy || 0;
@@ -618,9 +648,15 @@ async function fetchTvlData() {
             results.pendleLpTvl = results.pendleOct23.lpTvl + results.pendleDec11.lpTvl;
             results.pendleYtTvl = results.pendleOct23.ytTvl + results.pendleDec11.ytTvl;
             results.pendlePtTvl = results.pendleOct23.ptTvl + results.pendleDec11.ptTvl;
-            
         } catch (error) {
-            console.error("Pendle Market API Error:", error);
+            console.error("❌ [MAIN] Pendle Market API Error:", error);
+            console.error("❌ [MAIN] Error details:", {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+            // Continue with default values if market data fetch fails
+            console.warn("⚠️ [MAIN] Continuing with default market values due to API failure");
         }
         
         // Calculate total TVL = Gross TVL - SY alUSD (to avoid double counting)

@@ -469,6 +469,46 @@ async function downloadTableAsPNG(elementId, filename) {
             button.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg> GENERATING...';
         }
 
+        // Check if currently in dark mode
+        const wasDarkMode = document.body.classList.contains('dark-mode');
+        
+        // Check if this is the TVL table or Almanak table (which need regeneration)
+        const isTvlTable = elementId === 'tvlDownloadContainer';
+        const isAlmanakTable = elementId === 'almanakDownloadContainer';
+        
+        // Temporarily switch to light mode for screenshot
+        if (wasDarkMode) {
+            document.body.classList.remove('dark-mode');
+            
+            // If it's the TVL table, regenerate it with light theme colors
+            if (isTvlTable && marketData.tvlData && marketData.weightedTvl) {
+                displayTvlBreakdown();
+            }
+            
+            // If it's the Almanak table, regenerate it with light theme colors
+            if (isAlmanakTable && elements.resultsDiv.classList.contains('show')) {
+                const netToTakerText = elements.resultElements.netToTaker.textContent;
+                const ytAmount = parseFloat(netToTakerText.replace(/[^\d.-]/g, ''));
+                
+                if (ytAmount > 0) {
+                    const selectedMarket = marketData.selectedMarket;
+                    const selectedMarketData = marketData[selectedMarket];
+                    
+                    let initialInvestment = parseFloat(elements.amountInput.value);
+                    if (!initialInvestment && elements.ytCostInput.value) {
+                        initialInvestment = parseFloat(elements.ytCostInput.value);
+                    }
+                    
+                    if (selectedMarketData.daysToMaturity > 0 && initialInvestment > 0) {
+                        displayAlmanakScenarios(ytAmount, selectedMarketData.daysToMaturity, initialInvestment);
+                    }
+                }
+            }
+            
+            // Wait for CSS transition and regeneration to complete
+            await new Promise(resolve => setTimeout(resolve, 150));
+        }
+
         // Use html2canvas to capture the element
         const canvas = await html2canvas(element, {
             backgroundColor: '#ffffff',
@@ -479,6 +519,36 @@ async function downloadTableAsPNG(elementId, filename) {
             windowWidth: element.scrollWidth,
             windowHeight: element.scrollHeight
         });
+
+        // Restore dark mode if it was enabled
+        if (wasDarkMode) {
+            document.body.classList.add('dark-mode');
+            
+            // Regenerate TVL table with dark theme colors
+            if (isTvlTable && marketData.tvlData && marketData.weightedTvl) {
+                displayTvlBreakdown();
+            }
+            
+            // Regenerate Almanak table with dark theme colors
+            if (isAlmanakTable && elements.resultsDiv.classList.contains('show')) {
+                const netToTakerText = elements.resultElements.netToTaker.textContent;
+                const ytAmount = parseFloat(netToTakerText.replace(/[^\d.-]/g, ''));
+                
+                if (ytAmount > 0) {
+                    const selectedMarket = marketData.selectedMarket;
+                    const selectedMarketData = marketData[selectedMarket];
+                    
+                    let initialInvestment = parseFloat(elements.amountInput.value);
+                    if (!initialInvestment && elements.ytCostInput.value) {
+                        initialInvestment = parseFloat(elements.ytCostInput.value);
+                    }
+                    
+                    if (selectedMarketData.daysToMaturity > 0 && initialInvestment > 0) {
+                        displayAlmanakScenarios(ytAmount, selectedMarketData.daysToMaturity, initialInvestment);
+                    }
+                }
+            }
+        }
 
         // Convert canvas to blob
         canvas.toBlob(function(blob) {
@@ -502,6 +572,37 @@ async function downloadTableAsPNG(elementId, filename) {
     } catch (error) {
         console.error('Error generating image:', error);
         alert('Failed to generate image. Please try again.');
+        
+        // Make sure to restore dark mode on error
+        const wasDarkModeOnError = localStorage.getItem('darkMode') === 'enabled';
+        if (wasDarkModeOnError && !document.body.classList.contains('dark-mode')) {
+            document.body.classList.add('dark-mode');
+            
+            // Regenerate TVL table if needed
+            if (elementId === 'tvlDownloadContainer' && marketData.tvlData && marketData.weightedTvl) {
+                displayTvlBreakdown();
+            }
+            
+            // Regenerate Almanak table if needed
+            if (elementId === 'almanakDownloadContainer' && elements.resultsDiv.classList.contains('show')) {
+                const netToTakerText = elements.resultElements.netToTaker.textContent;
+                const ytAmount = parseFloat(netToTakerText.replace(/[^\d.-]/g, ''));
+                
+                if (ytAmount > 0) {
+                    const selectedMarket = marketData.selectedMarket;
+                    const selectedMarketData = marketData[selectedMarket];
+                    
+                    let initialInvestment = parseFloat(elements.amountInput.value);
+                    if (!initialInvestment && elements.ytCostInput.value) {
+                        initialInvestment = parseFloat(elements.ytCostInput.value);
+                    }
+                    
+                    if (selectedMarketData.daysToMaturity > 0 && initialInvestment > 0) {
+                        displayAlmanakScenarios(ytAmount, selectedMarketData.daysToMaturity, initialInvestment);
+                    }
+                }
+            }
+        }
         
         // Reset button on error
         const button = event.target.closest('.download-btn');
@@ -696,6 +797,28 @@ async function fetchAndUpdateTvlData() {
 }
 
 /**
+ * Get dark mode aware colors
+ */
+function getDarkModeColors() {
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    return {
+        headerBg: isDarkMode ? '#1a1a1a' : '#000',
+        headerText: isDarkMode ? '#ffffff' : '#fff',
+        borderBlack: isDarkMode ? '#ffffff' : '#000',
+        rowEven: isDarkMode ? '#2d2d2d' : '#f5f5f5',
+        rowOdd: isDarkMode ? '#1a1a1a' : '#ffffff',
+        lightBlue: isDarkMode ? '#1e3a5f' : '#e0f2fe',
+        lightRed: isDarkMode ? '#5f1e1e' : '#fee2e2',
+        lightGreen: isDarkMode ? '#1e5f3a' : '#dcfce7',
+        lightYellow: isDarkMode ? '#5f4a1e' : '#fef3c7',
+        lightGray: isDarkMode ? '#3d3d3d' : '#f8fafc',
+        whiteRow: isDarkMode ? '#2d2d2d' : '#ffffff',
+        grayText: isDarkMode ? '#a0a0a0' : '#6c757d',
+        darkGrayBg: isDarkMode ? '#3d3d3d' : '#6b7280'
+    };
+}
+
+/**
  * Display TVL breakdown table
  */
 function displayTvlBreakdown() {
@@ -708,6 +831,7 @@ function displayTvlBreakdown() {
     const tvlData = marketData.tvlData;
     const totalWeighted = weighted.totalWeightedTvl;
     const DAILY_POINTS = 316666; // Daily points distributed (95% of 333,333, 5% for referrals)
+    const colors = getDarkModeColors();
     
     // Get live prices from config (updated in fetchTvlData)
     const liveAlUsdPrice = tvlData.liveAlUsdPrice || window.PendleAPI.ALMANAK_POINTS_CONFIG.alUsdPrice;
@@ -744,26 +868,26 @@ function displayTvlBreakdown() {
     // Overall TVL Sources HTML (separate from points distribution)
     const tvlSourcesHTML = `
         <!-- Overall TVL Sources Section -->
-        <tr><td colspan="6" style="padding: 0; border: none;">
-            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 0 0 12px 0; padding: 12px 16px; background: #000; color: #fff; text-transform: uppercase; letter-spacing: 0.1em;">OVERALL TVL SOURCES</h4>
+        <tr><td colspan="6" style="padding: 0; border: none; border-right: none;">
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 0 0 12px 0; padding: 12px 16px; background: ${colors.headerBg}; color: ${colors.headerText}; text-transform: uppercase; letter-spacing: 0.1em;">OVERALL TVL SOURCES</h4>
         </td></tr>
-        <tr style="background-color: #f8fafc;">
+        <tr style="background-color: ${colors.lightGray};">
             <td colspan="2"><span class="tvl-type">alUSD Supply (${formatNumber(tvlData.alUsdSupply)} × $${liveAlUsdPrice.toFixed(6)})</span></td>
             <td colspan="4"><strong>${formatCurrency(tvlData.alUsdSupply * liveAlUsdPrice)}</strong></td>
         </tr>
-        <tr style="background-color: #ffffff;">
+        <tr style="background-color: ${colors.whiteRow};">
             <td colspan="2"><span class="tvl-type">alpUSD Supply (${formatNumber(tvlData.alpUsdSupply)} × $${liveAlpUsdPrice.toFixed(6)})</span></td>
             <td colspan="4"><strong>${formatCurrency(tvlData.alpUsdSupply * liveAlpUsdPrice)}</strong></td>
         </tr>
-        <tr style="background-color: #e0f2fe; font-weight: 600;">
+        <tr style="background-color: ${colors.lightBlue}; font-weight: 600;">
             <td colspan="2"><strong>GROSS TVL</strong></td>
             <td colspan="4"><strong>${formatCurrency(tvlData.grossTvl || tvlData.defiLlamaTvl)}</strong></td>
         </tr>
-        <tr style="background-color: #fee2e2;">
+        <tr style="background-color: ${colors.lightRed};">
             <td colspan="2"><span class="tvl-type" style="color: #991b1b;">Minus: SY alUSD (${formatNumber(tvlData.syAlUsdBalance)} × $${liveAlUsdPrice.toFixed(6)})</span></td>
             <td colspan="4"><strong style="color: #991b1b;">-${formatCurrency(tvlData.syAlUsdBalance * liveAlUsdPrice)}</strong></td>
         </tr>
-        <tr style="background-color: #dbeafe; font-weight: 600; border-bottom: 3px solid #0284c7;">
+        <tr style="background-color: ${colors.lightBlue}; font-weight: 600; border-bottom: 3px solid #0284c7;">
             <td colspan="2"><strong>NET TVL (for points)</strong></td>
             <td colspan="4"><strong style="font-size: 1.1rem;">${formatCurrency(tvlData.totalTvl)}</strong></td>
         </tr>
@@ -772,36 +896,36 @@ function displayTvlBreakdown() {
     // Points Distribution HTML (this is what gets downloaded)
     const pointsDistributionHTML = `
         <!-- Points Distribution Section -->
-        <tr><td colspan="6" style="padding: 0; border: none;">
-            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 24px 0 12px 0; padding: 12px 16px; background: #000; color: #fff; text-transform: uppercase; letter-spacing: 0.1em;">PENDLE MARKETS POINTS DISTRIBUTION</h4>
+        <tr><td colspan="6" style="padding: 0; border: none; border-right: none;">
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 24px 0 12px 0; padding: 12px 16px; background: ${colors.headerBg}; color: ${colors.headerText}; text-transform: uppercase; letter-spacing: 0.1em;">PENDLE MARKETS POINTS DISTRIBUTION</h4>
         </td></tr>
-        <tr style="background: #000; color: white;">
-            <th style="padding: 16px 14px; text-align: left; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">TVL Type</th>
-            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">TVL Amount</th>
-            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">Boost</th>
-            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">Weighted TVL</th>
-            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid #fff; border-bottom: 3px solid #000;">Daily Points</th>
-            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 3px solid #000;">Share %</th>
+        <tr style="background: ${colors.headerBg}; color: ${colors.headerText};">
+            <th style="padding: 16px 14px; text-align: left; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid ${colors.headerText}; border-bottom: 3px solid ${colors.headerBg};">TVL Type</th>
+            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid ${colors.headerText}; border-bottom: 3px solid ${colors.headerBg};">TVL Amount</th>
+            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid ${colors.headerText}; border-bottom: 3px solid ${colors.headerBg};">Boost</th>
+            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid ${colors.headerText}; border-bottom: 3px solid ${colors.headerBg};">Weighted TVL</th>
+            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-right: 2px solid ${colors.headerText}; border-bottom: 3px solid ${colors.headerBg};">Daily Points</th>
+            <th style="padding: 16px 14px; text-align: center; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 3px solid ${colors.headerBg};">Share %</th>
         </tr>
         
         <!-- October 23 Market -->
-        <tr style="background-color: ${weighted.oct23.isMatured ? '#fee2e2' : '#e0f2fe'}; border-top: 3px solid #000; border-bottom: 2px solid #000;">
-            <td colspan="6" style="padding: 10px 16px;">
+        <tr style="background-color: ${weighted.oct23.isMatured ? colors.lightRed : colors.lightBlue}; border-top: 3px solid ${colors.borderBlack}; border-bottom: 2px solid ${colors.borderBlack};">
+            <td colspan="6" style="padding: 10px 16px; border-right: none;">
                 <strong style="font-size: 0.95rem; color: ${weighted.oct23.isMatured ? '#dc2626' : '#2563eb'}; text-transform: uppercase; letter-spacing: 0.05em;">
                     OCTOBER 23, 2025 MARKET ${weighted.oct23.isMatured ? '[MATURED]' : ''}
                 </strong>
                 ${weighted.oct23.isMatured ? '<div style="font-size: 0.8rem; color: #dc2626; margin-top: 4px; font-weight: 600;">WARNING: Market has matured. No points earned. Please migrate to active markets.</div>' : ''}
             </td>
         </tr>
-        <tr style="background-color: #f9fafb; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
-            <td><span class="tvl-type">YT Oct 23</span><span class="tvl-boost ${weighted.oct23.isMatured ? '' : 'boost-5x'}" style="${weighted.oct23.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x (Matured)' : '5x Boost'}</span></td>
+        <tr style="background-color: ${colors.rowOdd}; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
+            <td><span class="tvl-type">YT Oct 23</span><span class="tvl-boost ${weighted.oct23.isMatured ? '' : 'boost-5x'}" style="${weighted.oct23.isMatured ? `background-color: ${colors.lightRed}; color: #991b1b;` : ''}">${weighted.oct23.isMatured ? '0x (Matured)' : '5x Boost'}</span></td>
             <td>${formatCurrency(weighted.oct23.ytTvl)}${weighted.oct23.isMatured && weighted.oct23.lockedYtTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked: ' + formatCurrency(weighted.oct23.lockedYtTvl) + ')</span>' : ''}</td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x' : '5x'}</td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.oct23.weightedYt)}</td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(ytDailyPointsOct23)}</strong> ${!weighted.oct23.isMatured ? '<span style="font-size: 0.8em; color: #6c757d;">(gross)</span>' : ''}</td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${ytShareOct23.toFixed(2)}%</td>
         </tr>
-        <tr style="background-color: #fee2e2; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
+        <tr style="background-color: ${colors.lightRed}; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
             <td style="padding-left: 20px;"><span class="tvl-type" style="color: #991b1b;">├─ Pendle Fee (5%)</span></td>
             <td style="color: #991b1b;">-</td>
             <td style="color: #991b1b;">-</td>
@@ -809,7 +933,7 @@ function displayTvlBreakdown() {
             <td style="color: #991b1b;"><strong>-${formatNumber(ytDailyPointsOct23 * 0.05)}</strong></td>
             <td style="color: #991b1b;">-${((ytDailyPointsOct23 * 0.05 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
         </tr>
-        <tr style="background-color: #dcfce7; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
+        <tr style="background-color: ${colors.lightGreen}; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
             <td style="padding-left: 20px;"><span class="tvl-type" style="color: #166534;">└─ YT Oct 23 NET</span></td>
             <td style="color: #166534;">-</td>
             <td style="color: #166534;">-</td>
@@ -817,16 +941,16 @@ function displayTvlBreakdown() {
             <td style="color: #166534;"><strong>${formatNumber(ytDailyPointsOct23 * 0.95)}</strong> <span style="font-size: 0.8em;">(net)</span></td>
             <td style="color: #166534;">${((ytDailyPointsOct23 * 0.95 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
         </tr>
-        <tr style="background-color: #ffffff; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
-            <td><span class="tvl-type">LP Oct 23</span><span class="tvl-boost ${weighted.oct23.isMatured ? '' : (weighted.oct23.lpBoost === 1.5 ? 'boost-1-5x' : 'boost-1-25x')}" style="${weighted.oct23.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x (Matured)' : weighted.oct23.lpBoost + 'x Boost'}</span></td>
+        <tr style="background-color: ${colors.whiteRow}; ${weighted.oct23.isMatured ? 'opacity: 0.6;' : ''}">
+            <td><span class="tvl-type">LP Oct 23</span><span class="tvl-boost ${weighted.oct23.isMatured ? '' : (weighted.oct23.lpBoost === 1.5 ? 'boost-1-5x' : 'boost-1-25x')}" style="${weighted.oct23.isMatured ? `background-color: ${colors.lightRed}; color: #991b1b;` : ''}">${weighted.oct23.isMatured ? '0x (Matured)' : weighted.oct23.lpBoost + 'x Boost'}</span></td>
             <td>${formatCurrency(weighted.oct23.lpTvl)}${weighted.oct23.isMatured && weighted.oct23.lockedLpTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked)</span>' : ''}</td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${weighted.oct23.isMatured ? '0x' : weighted.oct23.lpBoost + 'x'}</td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.oct23.weightedLp)}</td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(lpDailyPointsOct23)}</strong></td>
             <td style="${weighted.oct23.isMatured ? 'color: #991b1b;' : ''}">${lpShareOct23.toFixed(2)}%</td>
         </tr>
-        <tr style="opacity: 0.6; background-color: #fee2e2;">
-            <td><span class="tvl-type">PT Oct 23</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
+        <tr style="opacity: 0.6; background-color: ${colors.lightRed};">
+            <td><span class="tvl-type">PT Oct 23</span><span class="tvl-boost" style="background-color: ${colors.lightRed}; color: #991b1b;">EXCLUDED</span></td>
             <td><strong>${formatCurrency(weighted.oct23.ptTvl || 0)}</strong></td>
             <td style="color: #991b1b;"><strong>0x</strong></td>
             <td style="color: #991b1b;"><strong>${formatCurrency(0)}</strong></td>
@@ -835,23 +959,23 @@ function displayTvlBreakdown() {
         </tr>
         
         <!-- December 11 Market -->
-        <tr style="background-color: ${weighted.dec11.isMatured ? '#fee2e2' : '#dcfce7'}; border-top: 3px solid #000; border-bottom: 2px solid #000;">
-            <td colspan="6" style="padding: 10px 16px;">
+        <tr style="background-color: ${weighted.dec11.isMatured ? colors.lightRed : colors.lightGreen}; border-top: 3px solid ${colors.borderBlack}; border-bottom: 2px solid ${colors.borderBlack};">
+            <td colspan="6" style="padding: 10px 16px; border-right: none;">
                 <strong style="font-size: 0.95rem; color: ${weighted.dec11.isMatured ? '#dc2626' : '#059669'}; text-transform: uppercase; letter-spacing: 0.05em;">
                     DECEMBER 11, 2025 MARKET ${weighted.dec11.isMatured ? '[MATURED]' : ''}
                 </strong>
                 ${weighted.dec11.isMatured ? '<div style="font-size: 0.8rem; color: #dc2626; margin-top: 4px; font-weight: 600;">WARNING: Market has matured. No points earned. Please migrate to active markets.</div>' : ''}
             </td>
         </tr>
-        <tr style="background-color: #f9fafb; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
-            <td><span class="tvl-type">YT Dec 11</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : 'boost-5x'}" style="${weighted.dec11.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : '5x Boost'}</span></td>
+        <tr style="background-color: ${colors.rowOdd}; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+            <td><span class="tvl-type">YT Dec 11</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : 'boost-5x'}" style="${weighted.dec11.isMatured ? `background-color: ${colors.lightRed}; color: #991b1b;` : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : '5x Boost'}</span></td>
             <td>${formatCurrency(weighted.dec11.ytTvl)}${weighted.dec11.isMatured && weighted.dec11.lockedYtTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked: ' + formatCurrency(weighted.dec11.lockedYtTvl) + ')</span>' : ''}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x' : '5x'}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.dec11.weightedYt)}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(ytDailyPointsDec11)}</strong> ${!weighted.dec11.isMatured ? '<span style="font-size: 0.8em; color: #6c757d;">(gross)</span>' : ''}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${ytShareDec11.toFixed(2)}%</td>
         </tr>
-        <tr style="background-color: #fee2e2; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+        <tr style="background-color: ${colors.lightRed}; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
             <td style="padding-left: 20px;"><span class="tvl-type" style="color: #991b1b;">├─ Pendle Fee (5%)</span></td>
             <td style="color: #991b1b;">-</td>
             <td style="color: #991b1b;">-</td>
@@ -859,7 +983,7 @@ function displayTvlBreakdown() {
             <td style="color: #991b1b;"><strong>-${formatNumber(ytDailyPointsDec11 * 0.05)}</strong></td>
             <td style="color: #991b1b;">-${((ytDailyPointsDec11 * 0.05 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
         </tr>
-        <tr style="background-color: #dcfce7; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+        <tr style="background-color: ${colors.lightGreen}; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
             <td style="padding-left: 20px;"><span class="tvl-type" style="color: #166534;">└─ YT Dec 11 NET</span></td>
             <td style="color: #166534;">-</td>
             <td style="color: #166534;">-</td>
@@ -867,29 +991,29 @@ function displayTvlBreakdown() {
             <td style="color: #166534;"><strong>${formatNumber(ytDailyPointsDec11 * 0.95)}</strong> <span style="font-size: 0.8em;">(net)</span></td>
             <td style="color: #166534;">${((ytDailyPointsDec11 * 0.95 / (DAILY_POINTS + referralDailyPoints)) * 100).toFixed(2)}%</td>
         </tr>
-        <tr style="background-color: #e0f2fe; font-weight: 600; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+        <tr style="background-color: ${colors.lightBlue}; font-weight: 600; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
             <td><span class="tvl-type">LP Dec 11 (Total)</span></td>
             <td>${formatCurrency(weighted.dec11.lpTvl)}${weighted.dec11.isMatured && weighted.dec11.lockedLpTvl > 0 ? ' <span style="font-size: 0.75em; color: #92400e;">(Locked)</span>' : ''}</td>
-            <td colspan="4" style="text-align: center; font-style: italic; color: #6c757d;">Split into SY and PT portions below</td>
+            <td colspan="4" style="text-align: center; font-style: italic; color: ${colors.grayText};">Split into SY and PT portions below</td>
         </tr>
-        <tr style="background-color: #ffffff; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
-            <td style="padding-left: 20px;"><span class="tvl-type">├─ LP SY (alUSD)</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : 'boost-1-5x'}" style="${weighted.dec11.isMatured ? 'background-color: #fee2e2; color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : '1.5x Boost'}</span></td>
+        <tr style="background-color: ${colors.whiteRow}; ${weighted.dec11.isMatured ? 'opacity: 0.6;' : ''}">
+            <td style="padding-left: 20px;"><span class="tvl-type">├─ LP SY (alUSD)</span><span class="tvl-boost ${weighted.dec11.isMatured ? '' : 'boost-1-5x'}" style="${weighted.dec11.isMatured ? `background-color: ${colors.lightRed}; color: #991b1b;` : ''}">${weighted.dec11.isMatured ? '0x (Matured)' : '1.5x Boost'}</span></td>
             <td>${formatCurrency((weighted.dec11.lpSyTvl !== undefined && weighted.dec11.lpSyTvl !== null) ? weighted.dec11.lpSyTvl : 0)}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${weighted.dec11.isMatured ? '0x' : '1.5x'}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${formatCurrency(weighted.dec11.weightedLp || 0)}</td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}"><strong>${formatNumber(lpDailyPointsDec11)}</strong></td>
             <td style="${weighted.dec11.isMatured ? 'color: #991b1b;' : ''}">${lpShareDec11.toFixed(2)}%</td>
         </tr>
-        <tr style="opacity: 0.6; background-color: #fee2e2;">
-            <td style="padding-left: 20px;"><span class="tvl-type">└─ LP PT (alUSD)</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
+        <tr style="opacity: 0.6; background-color: ${colors.lightRed};">
+            <td style="padding-left: 20px;"><span class="tvl-type">└─ LP PT (alUSD)</span><span class="tvl-boost" style="background-color: ${colors.lightRed}; color: #991b1b;">EXCLUDED</span></td>
             <td><strong>${formatCurrency((weighted.dec11.lpPtTvl !== undefined && weighted.dec11.lpPtTvl !== null) ? weighted.dec11.lpPtTvl : 0)}</strong></td>
             <td style="color: #991b1b;"><strong>0x</strong></td>
             <td style="color: #991b1b;"><strong>${formatCurrency(0)}</strong></td>
             <td style="color: #991b1b;"><strong>0</strong></td>
             <td style="color: #991b1b;"><strong>0%</strong></td>
         </tr>
-        <tr style="opacity: 0.6; background-color: #fee2e2;">
-            <td><span class="tvl-type">PT Dec 11</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
+        <tr style="opacity: 0.6; background-color: ${colors.lightRed};">
+            <td><span class="tvl-type">PT Dec 11</span><span class="tvl-boost" style="background-color: ${colors.lightRed}; color: #991b1b;">EXCLUDED</span></td>
             <td><strong>${formatCurrency(weighted.dec11.ptTvl || 0)}</strong></td>
             <td style="color: #991b1b;"><strong>0x</strong></td>
             <td style="color: #991b1b;"><strong>${formatCurrency(0)}</strong></td>
@@ -898,11 +1022,11 @@ function displayTvlBreakdown() {
         </tr>
         
         <!-- Shared Categories -->
-        <tr><td colspan="6" style="padding: 0; border: none;">
-            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 24px 0 12px 0; padding: 12px 16px; background: #6b7280; color: #fff; text-transform: uppercase; letter-spacing: 0.1em;">SHARED CATEGORIES</h4>
+        <tr><td colspan="6" style="padding: 0; border: none; border-right: none;">
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 24px 0 12px 0; padding: 12px 16px; background: ${colors.darkGrayBg}; color: ${colors.headerText}; text-transform: uppercase; letter-spacing: 0.1em;">SHARED CATEGORIES</h4>
         </td></tr>
         <tr>
-            <td><span class="tvl-type">Curve Pool</span><span class="tvl-boost" style="background-color: #fef3c7; color: #92400e;">3x Boost</span></td>
+            <td><span class="tvl-type">Curve Pool</span><span class="tvl-boost" style="background-color: ${colors.lightYellow}; color: #92400e;">3x Boost</span></td>
             <td>${formatCurrency(weighted.curveTvl)}</td>
             <td>3x</td>
             <td>${formatCurrency(weighted.weightedCurve)}</td>
@@ -917,23 +1041,23 @@ function displayTvlBreakdown() {
             <td><strong>${formatNumber(otherDailyPoints)}</strong></td>
             <td>${otherShare.toFixed(2)}%</td>
         </tr>
-        <tr style="opacity: 0.7; background-color: #fee2e2;">
-            <td><span class="tvl-type">PT (Principal)</span><span class="tvl-boost" style="background-color: #fee2e2; color: #991b1b;">EXCLUDED</span></td>
+        <tr style="opacity: 0.7; background-color: ${colors.lightRed};">
+            <td><span class="tvl-type">PT (Principal)</span><span class="tvl-boost" style="background-color: ${colors.lightRed}; color: #991b1b;">EXCLUDED</span></td>
             <td><strong>${formatCurrency(tvlData.pendlePtTvl || 0)}</strong></td>
             <td style="color: #991b1b;"><strong>0x</strong></td>
             <td style="color: #991b1b;"><strong>${formatCurrency(0)}</strong></td>
             <td style="color: #991b1b;"><strong>0</strong></td>
             <td style="color: #991b1b;"><strong>0%</strong></td>
         </tr>
-        <tr style="background-color: #fef3c7;">
-            <td><span class="tvl-type">Referral Program</span><span class="tvl-boost" style="background-color: #fef3c7; color: #92400e;">5% Reserve</span></td>
+        <tr style="background-color: ${colors.lightYellow};">
+            <td><span class="tvl-type">Referral Program</span><span class="tvl-boost" style="background-color: ${colors.lightYellow}; color: #92400e;">5% Reserve</span></td>
             <td>-</td>
             <td>-</td>
             <td>-</td>
             <td><strong>${formatNumber(referralDailyPoints)}</strong></td>
             <td>5%</td>
         </tr>
-        <tr style="background-color: #fef3c7; border-top: 1px solid #f59e0b;">
+        <tr style="background-color: ${colors.lightYellow}; border-top: 1px solid #f59e0b;">
             <td><span class="tvl-type" style="color: #92400e;">Pendle Fees (5% of YT, goes to Pendle)</span></td>
             <td>-</td>
             <td>-</td>
@@ -1398,6 +1522,76 @@ function displayExistingYtResults(ytAmount, ytCost) {
         daysToMaturity: selectedMarketData.daysToMaturity
     });
 }
+
+/**
+ * Dark mode toggle functionality
+ */
+function initializeDarkMode() {
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const sunIcon = document.getElementById('sunIcon');
+    const moonIcon = document.getElementById('moonIcon');
+    
+    // Check for saved dark mode preference
+    const savedDarkMode = localStorage.getItem('darkMode');
+    
+    // Apply saved preference or default to light mode
+    if (savedDarkMode === 'enabled') {
+        document.body.classList.add('dark-mode');
+        sunIcon.style.display = 'none';
+        moonIcon.style.display = 'block';
+    }
+    
+    // Toggle dark mode on button click
+    darkModeToggle.addEventListener('click', function() {
+        document.body.classList.toggle('dark-mode');
+        
+        // Update icon visibility
+        if (document.body.classList.contains('dark-mode')) {
+            sunIcon.style.display = 'none';
+            moonIcon.style.display = 'block';
+            localStorage.setItem('darkMode', 'enabled');
+        } else {
+            sunIcon.style.display = 'block';
+            moonIcon.style.display = 'none';
+            localStorage.setItem('darkMode', 'disabled');
+        }
+        
+        // Refresh TVL table to update colors
+        if (marketData.tvlData && marketData.weightedTvl) {
+            displayTvlBreakdown();
+        }
+        
+        // Refresh Almanak table if visible
+        if (elements.resultsDiv.classList.contains('show')) {
+            const resultsVisible = elements.resultsDiv.style.display !== 'none';
+            if (resultsVisible) {
+                // Get current YT amount from displayed results
+                const netToTakerText = elements.resultElements.netToTaker.textContent;
+                const ytAmount = parseFloat(netToTakerText.replace(/[^\d.-]/g, ''));
+                
+                if (ytAmount > 0) {
+                    const selectedMarket = marketData.selectedMarket;
+                    const selectedMarketData = marketData[selectedMarket];
+                    
+                    // Get initial investment
+                    let initialInvestment = parseFloat(elements.amountInput.value);
+                    if (!initialInvestment && elements.ytCostInput.value) {
+                        initialInvestment = parseFloat(elements.ytCostInput.value);
+                    }
+                    
+                    if (selectedMarketData.daysToMaturity > 0 && initialInvestment > 0) {
+                        displayAlmanakScenarios(ytAmount, selectedMarketData.daysToMaturity, initialInvestment);
+                    }
+                }
+            }
+        }
+    });
+    
+    console.log('✅ Dark mode initialized');
+}
+
+// Initialize dark mode when DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeDarkMode);
 
 // Export functions for potential external use
 window.MoonshotCalculator = {

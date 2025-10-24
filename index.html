@@ -28,6 +28,20 @@
             --warning-yellow: #f59e0b;
             --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        /* Dark mode color scheme */
+        body.dark-mode {
+            --primary-black: #ffffff;
+            --primary-white: #1a1a1a;
+            --accent-gray: #2d2d2d;
+            --border-black: #ffffff;
+            --border-gray: #555555;
+            --text-gray: #e5e5e5;
+            --success-green: #10b981;
+            --warning-red: #ef4444;
+            --info-blue: #3b82f6;
+            --warning-yellow: #fbbf24;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: var(--primary-white);
@@ -55,6 +69,13 @@
             padding: 40px 30px;
             text-align: center;
             border-bottom: 3px solid var(--border-black);
+            position: relative;
+        }
+
+        /* Ensure header inverts in dark mode */
+        body.dark-mode .header {
+            background: var(--primary-white);
+            color: var(--primary-black);
         }
 
         .content {
@@ -276,6 +297,10 @@
             border: 2px solid var(--border-black);
         }
 
+        body.dark-mode .table-container {
+            border: 2px solid var(--border-black);
+        }
+
         .almanak-table {
             width: 100%;
             border-collapse: collapse;
@@ -368,6 +393,10 @@
             overflow-x: auto;
             border: 2px solid var(--border-black);
             margin-top: 20px;
+        }
+
+        body.dark-mode .tvl-table-container {
+            border: 2px solid var(--border-black);
         }
 
         .tvl-table {
@@ -689,6 +718,357 @@
             cursor: not-allowed;
         }
 
+        /* Dark mode toggle */
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--primary-white);
+            border: 3px solid var(--border-black);
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            z-index: 10;
+        }
+
+        .dark-mode-toggle:focus {
+            outline: none;
+            border-width: 4px;
+        }
+
+        .dark-mode-toggle svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--primary-black);
+        }
+
+        /* Dark mode specific adjustments */
+        body.dark-mode .almanak-table th,
+        body.dark-mode .tvl-table th {
+            background: var(--primary-white);
+            color: var(--primary-black);
+            border-right: 2px solid var(--primary-black);
+            border-bottom: 3px solid var(--border-black);
+        }
+
+        body.dark-mode .almanak-table tbody tr:nth-child(even),
+        body.dark-mode .tvl-table tbody tr:nth-child(even) {
+            background-color: var(--accent-gray);
+        }
+
+        body.dark-mode .almanak-table td,
+        body.dark-mode .tvl-table td {
+            border-bottom: 2px solid var(--border-black) !important;
+            border-right: 1px solid var(--border-gray) !important;
+        }
+
+        body.dark-mode .almanak-table tbody tr:last-child td,
+        body.dark-mode .tvl-table tbody tr:last-child td {
+            border-bottom: 2px solid var(--border-black) !important;
+        }
+
+        body.dark-mode .tvl-table td[colspan],
+        body.dark-mode .almanak-table td[colspan] {
+            border-right: none !important;
+        }
+
+        body.dark-mode .boost-5x {
+            background-color: #166534;
+            color: #dcfce7;
+        }
+
+        body.dark-mode .boost-1-25x {
+            background-color: #92400e;
+            color: #fef3c7;
+        }
+
+        body.dark-mode .boost-1-5x {
+            background-color: #1e40af;
+            color: #dbeafe;
+        }
+
+        body.dark-mode .boost-1x {
+            background-color: #4b5563;
+            color: #f3f4f6;
+        }
+
+        body.dark-mode .tvl-total-row {
+            background-color: #1e40af !important;
+            border-top: 2px solid #3b82f6;
+        }
+
+        body.dark-mode .info-box {
+            background: var(--accent-gray);
+        }
+
+        /* Dark mode - table row overrides */
+        body.dark-mode .tvl-table tbody tr:nth-child(even),
+        body.dark-mode .almanak-table tbody tr:nth-child(even) {
+            background-color: #2d2d2d !important;
+        }
+
+        body.dark-mode .tvl-table tbody tr:nth-child(odd),
+        body.dark-mode .almanak-table tbody tr:nth-child(odd) {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Dark mode - specific colored rows */
+        body.dark-mode [style*="background-color: #f8fafc"],
+        body.dark-mode [style*="background-color: #f9fafb"],
+        body.dark-mode [style*="background-color: #ffffff"] {
+            background-color: #2d2d2d !important;
+        }
+
+        body.dark-mode [style*="background-color: #e0f2fe"] {
+            background-color: #1e3a5f !important;
+        }
+
+        body.dark-mode [style*="background-color: #fee2e2"] {
+            background-color: #5f1e1e !important;
+        }
+
+        body.dark-mode [style*="background-color: #dcfce7"] {
+            background-color: #1e5f3a !important;
+        }
+
+        body.dark-mode [style*="background-color: #fef3c7"] {
+            background-color: #5f4a1e !important;
+        }
+
+        body.dark-mode [style*="background-color: #dbeafe"] {
+            background-color: #1e3a5f !important;
+        }
+
+        body.dark-mode [style*="background-color: #e5e7eb"] {
+            background-color: #3d3d3d !important;
+        }
+
+        /* Dark mode - info boxes with colored backgrounds */
+        body.dark-mode .info-box-blue {
+            background: #1e3a5f !important;
+            border-left-color: #3b82f6;
+        }
+
+        /* Dark mode - market cards */
+        body.dark-mode .market-card {
+            background: #2d2d2d !important;
+        }
+
+        body.dark-mode .market-card-subtitle {
+            color: #a0a0a0;
+        }
+
+        body.dark-mode .market-stat-label {
+            color: #a0a0a0;
+        }
+
+        /* Dark mode - calculate button */
+        body.dark-mode .calculate-btn {
+            background: var(--primary-white);
+            color: var(--primary-black);
+            border-color: var(--border-black);
+        }
+
+        body.dark-mode .calculate-btn:disabled {
+            background: #555555;
+            border-color: #555555;
+        }
+
+        /* Dark mode - results section */
+        body.dark-mode .results {
+            background-color: var(--accent-gray) !important;
+        }
+
+        /* Dark mode - gradient backgrounds */
+        body.dark-mode .market-info {
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%) !important;
+        }
+
+        /* Dark mode - tvl breakdown */
+        body.dark-mode .tvl-breakdown {
+            background: #2d2d2d !important;
+        }
+
+        /* Dark mode - error messages */
+        body.dark-mode .error {
+            background-color: #5f1e1e !important;
+            border-color: var(--warning-red);
+        }
+
+        /* Dark mode - loading text color overrides */
+        body.dark-mode .loading-text {
+            color: #a0a0a0 !important;
+        }
+
+        body.dark-mode [style*="color: #6c757d"],
+        body.dark-mode [style*="color: #6b7280"] {
+            color: #a0a0a0 !important;
+        }
+
+        body.dark-mode [style*="color: #991b1b"] {
+            color: #ff6b6b !important;
+        }
+
+        body.dark-mode [style*="color: #92400e"] {
+            color: #fbbf24 !important;
+        }
+
+        body.dark-mode [style*="color: #166534"] {
+            color: #4ade80 !important;
+        }
+
+        body.dark-mode [style*="color: #1e40af"] {
+            color: #60a5fa !important;
+        }
+
+        /* Dark mode - table headers with inline styles */
+        body.dark-mode table th[style*="background"] {
+            background: #1a1a1a !important;
+            color: #ffffff !important;
+        }
+
+        body.dark-mode table th[style*="background: #000"],
+        body.dark-mode table th[style*="background: var(--primary-black)"] {
+            background: #1a1a1a !important;
+            color: #ffffff !important;
+        }
+
+        body.dark-mode [style*="background: #6b7280"] {
+            background: #3d3d3d !important;
+        }
+
+        /* Dark mode - specific market sections */
+        body.dark-mode [style*="background-color: #e0f2fe"][style*="border-top"] {
+            background-color: #1e3a5f !important;
+        }
+
+        body.dark-mode [style*="background-color: #dcfce7"][style*="border-top"] {
+            background-color: #1e5f3a !important;
+        }
+
+        /* Dark mode - subtitle in header */
+        body.dark-mode .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Dark mode - section title */
+        body.dark-mode .section-title {
+            color: var(--primary-black);
+        }
+
+        /* Dark mode - result labels */
+        body.dark-mode .result-label {
+            color: var(--primary-black);
+        }
+
+        body.dark-mode .result-value {
+            color: var(--primary-black);
+        }
+
+        /* Dark mode - info box text */
+        body.dark-mode .info-box-text {
+            color: var(--primary-black);
+        }
+
+        /* Dark mode - tvl breakdown */
+        body.dark-mode .tvl-breakdown p {
+            color: var(--text-gray);
+        }
+
+        body.dark-mode .tvl-breakdown h3 {
+            color: var(--primary-black);
+        }
+
+        /* Dark mode - result section headers */
+        body.dark-mode .result-section h3 {
+            color: var(--primary-black);
+        }
+
+        /* Dark mode - download button */
+        body.dark-mode .download-btn {
+            background: var(--primary-white);
+            color: var(--primary-black);
+            border-color: var(--border-black);
+        }
+
+        body.dark-mode .download-btn:hover {
+            background: var(--accent-gray);
+        }
+
+        /* Dark mode - button group */
+        body.dark-mode .button-group {
+            border-color: var(--border-black);
+        }
+
+        body.dark-mode .selector-btn {
+            background: var(--primary-white);
+            color: var(--primary-black);
+            border-right-color: var(--border-black);
+        }
+
+        body.dark-mode .selector-btn.toggle-active {
+            background: var(--primary-black);
+            color: var(--primary-white);
+        }
+
+        body.dark-mode .selector-btn.oct23-active {
+            background: var(--info-blue);
+            color: var(--primary-white);
+        }
+
+        body.dark-mode .selector-btn.dec11-active {
+            background: var(--success-green);
+            color: var(--primary-white);
+        }
+
+        /* Dark mode - input fields */
+        body.dark-mode input[type="number"] {
+            background-color: var(--accent-gray);
+            color: var(--primary-black);
+            border-color: var(--border-black);
+        }
+
+        body.dark-mode input[type="number"]:focus {
+            background-color: var(--accent-gray);
+            border-color: var(--border-black);
+        }
+
+        /* Dark mode - labels */
+        body.dark-mode label {
+            color: var(--primary-black);
+        }
+
+        /* Dark mode - h4 headers in tables */
+        body.dark-mode h4 {
+            color: var(--primary-black);
+        }
+
+        /* Dark mode - ensure all borders show */
+        body.dark-mode [style*="border-top"] {
+            border-top-color: var(--border-black) !important;
+        }
+
+        body.dark-mode [style*="border-bottom"] {
+            border-bottom-color: var(--border-black) !important;
+        }
+
+        body.dark-mode [style*="border-right"] {
+            border-right-color: var(--border-gray) !important;
+        }
+
+        body.dark-mode [style*="border-left"] {
+            border-left-color: var(--border-black) !important;
+        }
+
+        /* Dark mode - tvl type text */
+        body.dark-mode .tvl-type {
+            color: var(--primary-black);
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin-top: 20px;
@@ -821,12 +1201,41 @@
                 width: 16px;
                 height: 16px;
             }
+
+            .dark-mode-toggle {
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                border-width: 2px;
+            }
+
+            .dark-mode-toggle svg {
+                width: 20px;
+                height: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Toggle dark mode">
+                <svg id="sunIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
             <h1>Pendle Moonshot Calculator</h1>
             <p class="subtitle">Calculate potential returns with Pendle Finance yield tokens</p>
         </div>

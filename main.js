@@ -1731,11 +1731,11 @@ function displayMinimumFunds() {
         market: 'shared'
     });
     
-    // Other TVL
+    // Other TVL (renamed to alUSD/alpUSD in wallet)
     const otherBoost = window.PendleAPI.ALMANAK_POINTS_CONFIG.boosts.other;
     const otherMinFunds = weightedAmountFor1Point / otherBoost;
     pools.push({
-        name: 'Other TVL (Holding)',
+        name: 'alUSD/alpUSD in wallet',
         boost: otherBoost + 'x',
         boostNum: otherBoost,
         dailyPoolPoints: (weighted.weightedOther / totalWeighted) * DAILY_POINTS,
@@ -1743,16 +1743,28 @@ function displayMinimumFunds() {
         minTokens: otherMinFunds / liveAlUsdPrice,
         status: 'Active',
         isMatured: false,
-        market: 'shared'
+        market: 'shared',
+        tokenType: 'alUSD'
     });
     
-    // Generate HTML rows
-    const tableRows = pools.map(pool => {
-        const statusColor = pool.isMatured ? '#dc2626' : '#10b981';
-        const rowOpacity = pool.isMatured ? 'opacity: 0.6;' : '';
-        const minFundsDisplay = pool.minFunds === Infinity 
-            ? 'N/A (0 points)' 
-            : `$${formatCurrency(pool.minFunds).replace('$', '')}<br><span style="font-size: 0.85em; color: ${colors.grayText};">(${formatNumber(pool.minTokens)} alUSD)</span>`;
+    // Filter out matured pools
+    const activePools = pools.filter(pool => !pool.isMatured);
+    
+    // Generate HTML rows (only for active pools)
+    const tableRows = activePools.map(pool => {
+        const statusColor = '#10b981'; // All active pools are green
+        
+        // Determine display format based on pool type
+        let minTokensDisplay;
+        if (pool.minFunds === Infinity) {
+            minTokensDisplay = 'N/A (0 points)';
+        } else if (pool.name.includes('YT')) {
+            // For YT pools, show YT amount only
+            minTokensDisplay = `${formatNumber(pool.minTokens)} YT`;
+        } else {
+            // For LP, Curve, and wallet, show $ value with alUSD amount below
+            minTokensDisplay = `$${formatCurrency(pool.minFunds).replace('$', '')}<br><span style="font-size: 0.85em; color: ${colors.grayText};">(${formatNumber(pool.minTokens)} alUSD)</span>`;
+        }
         
         const netPoints = pool.boostNum === 5 ? pool.dailyPoolPoints * 0.95 : pool.dailyPoolPoints;
         const pendleFee = pool.boostNum === 5 ? pool.dailyPoolPoints * 0.05 : 0;
@@ -1769,11 +1781,11 @@ function displayMinimumFunds() {
         }
         
         return `
-            <tr style="${rowOpacity}">
+            <tr>
                 <td style="text-align: left;"><strong>${pool.name}</strong></td>
                 <td style="text-align: center;">${pool.boost}</td>
                 <td style="text-align: center;">${dailyPointsDisplay}</td>
-                <td style="text-align: center;">${minFundsDisplay}</td>
+                <td style="text-align: center;">${minTokensDisplay}</td>
                 <td style="text-align: center; color: ${statusColor}; font-weight: 600;">${pool.status}</td>
             </tr>
         `;

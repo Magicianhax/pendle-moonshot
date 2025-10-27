@@ -1318,6 +1318,9 @@
                  <button class="selector-btn" id="existingYtBtn">
                      EXISTING YT HOLDER
                 </button>
+                 <button class="selector-btn" id="minFundsBtn">
+                     MINIMUM FUNDS
+                </button>
             </div>
 
             <!-- New Trade Section -->
@@ -1349,6 +1352,39 @@
                 </div>
                 
                 <button class="calculate-btn" id="calculateExistingBtn">Calculate My Returns</button>
+            </div>
+
+            <!-- Minimum Funds Section -->
+            <div id="minFundsSection" style="display: none;">
+                 <div class="info-box info-box-blue" style="margin-bottom: 24px;">
+                     <p class="info-box-text">
+                         <strong>MINIMUM FUNDS CALCULATOR:</strong> See how much capital you need to earn at least 1 point daily in each pool. This helps you understand entry barriers and optimal position sizing.
+                    </p>
+                </div>
+                
+                <div class="tvl-breakdown">
+                    <h3>Minimum Funds Required (for 1 Point Daily)</h3>
+                    <p>This table shows the minimum TVL required to earn at least 1 point per day in each pool, accounting for boost multipliers.</p>
+                    
+                    <div class="tvl-table-container">
+                        <table class="tvl-table">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left;">Pool / Position</th>
+                                    <th>Boost</th>
+                                    <th>Daily Points Distribution</th>
+                                    <th>Min. Funds (1 Point/Day)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="minFundsTableBody">
+                                <tr>
+                                    <td colspan="5" class="loading-text">Loading minimum funds data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             
             <div id="loading" class="loading" style="display: none;">

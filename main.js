@@ -96,8 +96,11 @@ function initializeApp() {
     // Get toggle elements
     elements.newTradeBtn = document.getElementById('newTradeBtn');
     elements.existingYtBtn = document.getElementById('existingYtBtn');
+    elements.minFundsBtn = document.getElementById('minFundsBtn');
     elements.newTradeSection = document.getElementById('newTradeSection');
     elements.existingYtSection = document.getElementById('existingYtSection');
+    elements.minFundsSection = document.getElementById('minFundsSection');
+    elements.minFundsTableBody = document.getElementById('minFundsTableBody');
     
     // Get existing YT elements
     elements.ytAmountInput = document.getElementById('ytAmount');
@@ -147,6 +150,7 @@ function setupEventListeners() {
     // Toggle buttons
     elements.newTradeBtn.addEventListener('click', () => switchToNewTrade());
     elements.existingYtBtn.addEventListener('click', () => switchToExistingYt());
+    elements.minFundsBtn.addEventListener('click', () => switchToMinFunds());
     
     // Calculate button click for new trade
     elements.calculateNewBtn.addEventListener('click', handleCalculateClick);
@@ -1372,9 +1376,11 @@ function displayAlmanakScenarios(ytAmount, daysToMaturity, initialInvestment = n
 function switchToNewTrade() {
     elements.newTradeBtn.classList.add('toggle-active');
     elements.existingYtBtn.classList.remove('toggle-active');
+    elements.minFundsBtn.classList.remove('toggle-active');
     
     elements.newTradeSection.style.display = 'block';
     elements.existingYtSection.style.display = 'none';
+    elements.minFundsSection.style.display = 'none';
     
     hideResults();
     hideError();
@@ -1386,12 +1392,33 @@ function switchToNewTrade() {
 function switchToExistingYt() {
     elements.existingYtBtn.classList.add('toggle-active');
     elements.newTradeBtn.classList.remove('toggle-active');
+    elements.minFundsBtn.classList.remove('toggle-active');
     
     elements.existingYtSection.style.display = 'block';
     elements.newTradeSection.style.display = 'none';
+    elements.minFundsSection.style.display = 'none';
     
     hideResults();
     hideError();
+}
+
+/**
+ * Switch to minimum funds mode
+ */
+function switchToMinFunds() {
+    elements.minFundsBtn.classList.add('toggle-active');
+    elements.newTradeBtn.classList.remove('toggle-active');
+    elements.existingYtBtn.classList.remove('toggle-active');
+    
+    elements.minFundsSection.style.display = 'block';
+    elements.newTradeSection.style.display = 'none';
+    elements.existingYtSection.style.display = 'none';
+    
+    hideResults();
+    hideError();
+    
+    // Calculate and display minimum funds when tab opens
+    displayMinimumFunds();
 }
 
 /**
@@ -1561,6 +1588,11 @@ function initializeDarkMode() {
             displayTvlBreakdown();
         }
         
+        // Refresh minimum funds table if visible
+        if (elements.minFundsSection && elements.minFundsSection.style.display !== 'none') {
+            displayMinimumFunds();
+        }
+        
         // Refresh Almanak table if visible
         if (elements.resultsDiv.classList.contains('show')) {
             const resultsVisible = elements.resultsDiv.style.display !== 'none';
@@ -1593,6 +1625,173 @@ function initializeDarkMode() {
 // Initialize dark mode when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeDarkMode);
 
+/**
+ * Display minimum funds required to earn 1 point daily in each pool
+ */
+function displayMinimumFunds() {
+    if (!marketData.weightedTvl || !marketData.tvlData) {
+        elements.minFundsTableBody.innerHTML = '<tr><td colspan="5" class="loading-text">Loading TVL data...</td></tr>';
+        return;
+    }
+    
+    const weighted = marketData.weightedTvl;
+    const tvlData = marketData.tvlData;
+    const DAILY_POINTS = 316666; // Daily points distributed (95% of 333,333)
+    const colors = getDarkModeColors();
+    
+    // Get live prices
+    const liveAlUsdPrice = tvlData.liveAlUsdPrice || window.PendleAPI.ALMANAK_POINTS_CONFIG.alUsdPrice;
+    
+    // For 1 point daily:
+    // pointsShare = weightedAmount / totalWeightedTvl
+    // 1 / DAILY_POINTS = weightedAmount / totalWeightedTvl
+    // weightedAmount = totalWeightedTvl / DAILY_POINTS
+    // actualAmount = weightedAmount / boost
+    
+    const totalWeighted = weighted.totalWeightedTvl;
+    const weightedAmountFor1Point = totalWeighted / DAILY_POINTS;
+    
+    // Calculate for each pool
+    const pools = [];
+    
+    // October 23 Market - YT
+    const oct23YtBoost = weighted.oct23.ytBoost;
+    const oct23YtMinFunds = oct23YtBoost > 0 ? weightedAmountFor1Point / oct23YtBoost : Infinity;
+    const oct23YtMinFundsTokens = oct23YtMinFunds / liveAlUsdPrice;
+    pools.push({
+        name: 'YT-alUSD (Oct 23)',
+        boost: oct23YtBoost + 'x',
+        boostNum: oct23YtBoost,
+        dailyPoolPoints: (weighted.oct23.weightedYt / totalWeighted) * DAILY_POINTS,
+        minFunds: oct23YtMinFunds,
+        minTokens: oct23YtMinFundsTokens,
+        status: weighted.oct23.isMatured ? 'MATURED' : 'Active',
+        isMatured: weighted.oct23.isMatured,
+        market: 'oct23'
+    });
+    
+    // October 23 Market - LP
+    const oct23LpBoost = weighted.oct23.lpBoost;
+    const oct23LpMinFunds = oct23LpBoost > 0 ? weightedAmountFor1Point / oct23LpBoost : Infinity;
+    pools.push({
+        name: 'LP-alUSD (Oct 23)',
+        boost: oct23LpBoost + 'x',
+        boostNum: oct23LpBoost,
+        dailyPoolPoints: (weighted.oct23.weightedLp / totalWeighted) * DAILY_POINTS,
+        minFunds: oct23LpMinFunds,
+        minTokens: oct23LpMinFunds / liveAlUsdPrice,
+        status: weighted.oct23.isMatured ? 'MATURED' : 'Active',
+        isMatured: weighted.oct23.isMatured,
+        market: 'oct23'
+    });
+    
+    // December 11 Market - YT
+    const dec11YtBoost = weighted.dec11.ytBoost;
+    const dec11YtMinFunds = dec11YtBoost > 0 ? weightedAmountFor1Point / dec11YtBoost : Infinity;
+    const dec11YtMinFundsTokens = dec11YtMinFunds / liveAlUsdPrice;
+    pools.push({
+        name: 'YT-alUSD (Dec 11)',
+        boost: dec11YtBoost + 'x',
+        boostNum: dec11YtBoost,
+        dailyPoolPoints: (weighted.dec11.weightedYt / totalWeighted) * DAILY_POINTS,
+        minFunds: dec11YtMinFunds,
+        minTokens: dec11YtMinFundsTokens,
+        status: weighted.dec11.isMatured ? 'MATURED' : 'Active',
+        isMatured: weighted.dec11.isMatured,
+        market: 'dec11'
+    });
+    
+    // December 11 Market - LP (SY portion only)
+    const dec11LpBoost = weighted.dec11.lpBoost;
+    const dec11LpMinFunds = dec11LpBoost > 0 ? weightedAmountFor1Point / dec11LpBoost : Infinity;
+    pools.push({
+        name: 'LP-alUSD SY (Dec 11)',
+        boost: dec11LpBoost + 'x',
+        boostNum: dec11LpBoost,
+        dailyPoolPoints: (weighted.dec11.weightedLp / totalWeighted) * DAILY_POINTS,
+        minFunds: dec11LpMinFunds,
+        minTokens: dec11LpMinFunds / liveAlUsdPrice,
+        status: weighted.dec11.isMatured ? 'MATURED' : 'Active',
+        isMatured: weighted.dec11.isMatured,
+        market: 'dec11'
+    });
+    
+    // Curve Pool
+    const curveBoost = window.PendleAPI.ALMANAK_POINTS_CONFIG.boosts.curve;
+    const curveMinFunds = weightedAmountFor1Point / curveBoost;
+    pools.push({
+        name: 'Curve Pool',
+        boost: curveBoost + 'x',
+        boostNum: curveBoost,
+        dailyPoolPoints: (weighted.weightedCurve / totalWeighted) * DAILY_POINTS,
+        minFunds: curveMinFunds,
+        minTokens: curveMinFunds / liveAlUsdPrice,
+        status: 'Active',
+        isMatured: false,
+        market: 'shared'
+    });
+    
+    // Other TVL
+    const otherBoost = window.PendleAPI.ALMANAK_POINTS_CONFIG.boosts.other;
+    const otherMinFunds = weightedAmountFor1Point / otherBoost;
+    pools.push({
+        name: 'Other TVL (Holding)',
+        boost: otherBoost + 'x',
+        boostNum: otherBoost,
+        dailyPoolPoints: (weighted.weightedOther / totalWeighted) * DAILY_POINTS,
+        minFunds: otherMinFunds,
+        minTokens: otherMinFunds / liveAlUsdPrice,
+        status: 'Active',
+        isMatured: false,
+        market: 'shared'
+    });
+    
+    // Generate HTML rows
+    const tableRows = pools.map(pool => {
+        const statusColor = pool.isMatured ? '#dc2626' : '#10b981';
+        const rowOpacity = pool.isMatured ? 'opacity: 0.6;' : '';
+        const minFundsDisplay = pool.minFunds === Infinity 
+            ? 'N/A (0 points)' 
+            : `$${formatCurrency(pool.minFunds).replace('$', '')}<br><span style="font-size: 0.85em; color: ${colors.grayText};">(${formatNumber(pool.minTokens)} alUSD)</span>`;
+        
+        const netPoints = pool.boostNum === 5 ? pool.dailyPoolPoints * 0.95 : pool.dailyPoolPoints;
+        const pendleFee = pool.boostNum === 5 ? pool.dailyPoolPoints * 0.05 : 0;
+        
+        let dailyPointsDisplay = formatNumber(pool.dailyPoolPoints);
+        if (pool.boostNum === 5) {
+            dailyPointsDisplay = `
+                <div>${formatNumber(netPoints)} (net)</div>
+                <div style="font-size: 0.75em; color: #6c757d; margin-top: 2px;">
+                    ${formatNumber(pool.dailyPoolPoints)} gross<br>
+                    <span style="color: #dc2626;">-${formatNumber(pendleFee)} fee (5%)</span>
+                </div>
+            `;
+        }
+        
+        return `
+            <tr style="${rowOpacity}">
+                <td style="text-align: left;"><strong>${pool.name}</strong></td>
+                <td style="text-align: center;">${pool.boost}</td>
+                <td style="text-align: center;">${dailyPointsDisplay}</td>
+                <td style="text-align: center;">${minFundsDisplay}</td>
+                <td style="text-align: center; color: ${statusColor}; font-weight: 600;">${pool.status}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    // Add summary row
+    const summaryRow = `
+        <tr style="background-color: ${colors.lightBlue}; border-top: 3px solid ${colors.borderBlack};">
+            <td colspan="5" style="padding: 12px 16px; text-align: center;">
+                <strong>Total Daily Points:</strong> ${formatNumber(DAILY_POINTS)} 
+                <span style="font-size: 0.85em; color: ${colors.grayText}; margin-left: 8px;">(95% of 333,333 - 5% reserved for referrals)</span>
+            </td>
+        </tr>
+    `;
+    
+    elements.minFundsTableBody.innerHTML = tableRows + summaryRow;
+}
+
 // Export functions for potential external use
 window.MoonshotCalculator = {
     calculateMoonshot: handleCalculateClick,
@@ -1602,7 +1801,9 @@ window.MoonshotCalculator = {
     refreshMarketData,
     updateCountdown,
     displayTvlBreakdown,
+    displayMinimumFunds,
     switchToNewTrade,
     switchToExistingYt,
+    switchToMinFunds,
     downloadTableAsPNG
 };

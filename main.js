@@ -785,10 +785,20 @@ async function fetchAndUpdateTvlData() {
             // Update TVL breakdown table
             displayTvlBreakdown();
             console.log('✅ TVL table updated successfully');
+            
+            // Update minimum funds table if it's currently visible
+            if (elements.minFundsSection && elements.minFundsSection.style.display !== 'none') {
+                displayMinimumFunds();
+                console.log('✅ Minimum funds table updated in real-time');
+            }
         } else {
             console.error('❌ Failed to fetch TVL data:', tvlResponse ? tvlResponse.error : 'No response');
             if (elements.tvlTableBody) {
                 elements.tvlTableBody.innerHTML = '<tr><td colspan="6" class="loading-text" style="color: #dc2626;">Error loading TVL data. Check console for details.</td></tr>';
+            }
+            // Also update minimum funds table if visible
+            if (elements.minFundsSection && elements.minFundsSection.style.display !== 'none' && elements.minFundsTableBody) {
+                elements.minFundsTableBody.innerHTML = '<tr><td colspan="5" class="loading-text" style="color: #dc2626;">Error loading TVL data. Check console for details.</td></tr>';
             }
         }
     } catch (error) {
@@ -796,6 +806,10 @@ async function fetchAndUpdateTvlData() {
         console.error('Error stack:', error.stack);
         if (elements.tvlTableBody) {
             elements.tvlTableBody.innerHTML = '<tr><td colspan="6" class="loading-text" style="color: #dc2626;">Error: ' + error.message + '</td></tr>';
+        }
+        // Also update minimum funds table if visible
+        if (elements.minFundsSection && elements.minFundsSection.style.display !== 'none' && elements.minFundsTableBody) {
+            elements.minFundsTableBody.innerHTML = '<tr><td colspan="5" class="loading-text" style="color: #dc2626;">Error: ' + error.message + '</td></tr>';
         }
     }
 }
